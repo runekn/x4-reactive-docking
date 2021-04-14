@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<content id="DockingOptions" name="Docking options" description="Seperates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to all ship types" author="Runekn" version="1.0" date="2021-04-11" save="0" enabled="1">
-	<text language="44" name="Docking options" description="Seperates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to all ship types" author="Runekn" />
+<content id="ReactiveDocking" name="Reactive Docking" description="Seperates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to non-carrier capital ship types" author="Runekn" version="010" date="2021-04-11" save="0" enabled="1">
+	<text language="44" name="Reactive Docking" description="Seperates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to non-carrier capital ship types" author="Runekn" />
 </content>

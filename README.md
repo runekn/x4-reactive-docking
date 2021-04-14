@@ -30,6 +30,13 @@ This mod is currently not compatible with other mods that change the loadout men
 3. *I wanna fix your shitty code*
 	- You are very welcome to make requests to the [github](https://github.com/runekn/x4-reactive-docking).
 
+4. *When I change the pilot or take manual control of a ship the Reactive mode is removed?*
+	- Yes, the only way I know to transfer changes from UI to the escort script is to use the pilot's blackboard. So the reactive mode is attached to the pilot.
+
+## Known bugs
+
+* Error logs on changing pilot on ship that had reactive mode enabled. Though it doesn't seem to have an impact.
+
 ## TODO
 
 * v1

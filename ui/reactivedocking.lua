@@ -50,7 +50,8 @@ local function init()
 	dock_menu.display = do_menu.display
 end 
 
-local function setReactiveDocking(pilotentityid, i, reactive)
+local function setReactiveDocking(inputobject, i, reactive)
+	local pilotentityid = GetControlEntity(inputobject)
 	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
 	if reactiveList == nil then
 		reactiveList = {}
@@ -59,7 +60,8 @@ local function setReactiveDocking(pilotentityid, i, reactive)
 	SetNPCBlackboard(pilotentityid, "$DockingReactive", reactiveList)
 end
 
-local function getReactiveDocking(pilotentityid, i)
+local function getReactiveDocking(inputobject, i)
+	local pilotentityid = GetControlEntity(inputobject)
 	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
 	if reactiveList == nil or reactiveList[i] == nil then
 		return false
@@ -620,7 +622,6 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							--row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 							--row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
 							-- With this
-							local pilotentityid = GetControlEntity(inputobject)
 							local shiptype = GetComponentData(inputobject, "shiptype")
 							local iscarrier = shiptype == "carrier"
 							if iscarrier then
@@ -629,7 +630,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							else
 								row[3]:setColSpan(11):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, height = config.mapRowHeight, startOption = function () 
 									local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
-									local reactive = getReactiveDocking(pilotentityid, i)
+									local reactive = getReactiveDocking(inputobject, i)
 									if not docked and reactive then
 										return "reactive"
 									elseif not docked then
@@ -649,7 +650,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 										docked = false
 									end
 									C.SetSubordinateGroupDockAtCommander(inputobject, i, docked)
-									setReactiveDocking(pilotentityid, i, reactive)
+									setReactiveDocking(inputobject, i, reactive)
 									menu.noupdate = false
 								end
 							end
@@ -1539,7 +1540,6 @@ function do_menu.display()
 						--row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 						--row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
 						-- With this
-						local pilotentityid = GetControlEntity(menu.currentplayership)
 						local shiptype = GetComponentData(menu.currentplayership, "shiptype")
 						local iscarrier = shiptype == "carrier"
 						if iscarrier then
@@ -1548,7 +1548,7 @@ function do_menu.display()
 						else
 							row[7]:setColSpan(5):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, startOption = function () 
 								local docked = C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)
-								local reactive = getReactiveDocking(pilotentityid, i)
+								local reactive = getReactiveDocking(inputobject, i)
 								if not docked and reactive then
 									return "reactive"
 								elseif not docked then
@@ -1567,7 +1567,7 @@ function do_menu.display()
 									docked = false
 								end
 								C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, docked)
-								setReactiveDocking(pilotentityid, i, reactive)
+								setReactiveDocking(inputobject, i, reactive)
 							end
 						end
 						-- Runekn's Docking Options edits end here --
