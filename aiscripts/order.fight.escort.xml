@@ -2,23 +2,10 @@
 
 <diff>
 	<!--
-	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
-		<set_value name="$dock" exact="null" />
-		<do_if value="not this.assignedcontrolled.iscapitalship">
-			<find_dockingbay object="$target" name="$dock">
-				<match_dock size="this.assignedcontrolled.docksize" trading="false" building="false" storage="false"/>
-			</find_dockingbay>
-		</do_if>
-		<do_else>
-			<debug_text text="'Ship %s cannot dock at command ship'.[@this.assignedcontrolled.knownname]" />
-		</do_else>
-		<set_value name="$iscarrierbased" exact="$dock != null"/>
-		<debug_text text="'Ship %s is carrier based: %s'.[@this.assignedcontrolled.knownname, @$iscarrierbased]" />
-	</replace>
+		Here we replace the $iscarrier assignment. We simply add another condition; if subordinate group is 'reactive' then true.
 	-->
-	
 	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
-		<do_if value="this.assignedcontrolled.knownname == 'Elite Vanguard'">
+		<!--<do_if value="this.assignedcontrolled.knownname == 'Elite Vanguard'">
 			<set_value name="$debugchance" exact="100" />
 			<debug_text text="'Typeof: %s'.[typeof @$target.pilot.$DockingReactive]" />
 			<do_if value="@$target.pilot.$DockingReactive">
@@ -26,12 +13,11 @@
 					<debug_text text="'%s: %s'.[$i, @$target.pilot.$DockingReactive.{$i}]" />
 				</do_all>
 			</do_if>
-		</do_if>
+		</do_if>-->
 		<set_value name="$groupindex" exact="this.assignedcontrolled.subordinategroupid" />
-		<debug_text text="'Ship %s group index is: %s'.[@this.assignedcontrolled.knownname, @$groupindex]" chance="$debugchance" />
-		<set_value name="$reactivedocking" exact="@$target.pilot.$DockingReactive.{$groupindex} == 1" />
-		<debug_text text="'Ship %s reactive docking is: %s'.[@this.assignedcontrolled.knownname, @$reactivedocking]" chance="$debugchance" />
+		<set_value name="$reactivedocking" exact="@$target.pilot.$DockingReactive.{$groupindex} != 0" />
+		<!--<debug_text text="'Ship %s has reactive docking: %s'.[@this.assignedcontrolled.knownname, @$reactivedocking]" chance="$debugchance" />-->
 		<set_value name="$iscarrierbased" exact="(($reactivedocking and @$target.iscapitalship) or @$target.type == shiptype.carrier or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/>
-		<debug_text text="'Ship %s is carrier based: %s'.[@this.assignedcontrolled.knownname, @$iscarrierbased]" chance="$debugchance" />
+		<!--<debug_text text="'Ship %s is carrier based: %s'.[@this.assignedcontrolled.knownname, @$iscarrierbased]" chance="$debugchance" />-->
 	</replace>
 </diff>

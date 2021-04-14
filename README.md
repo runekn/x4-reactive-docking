@@ -28,7 +28,7 @@ This mod is currently not compatible with other mods that change the loadout men
 	- Again, seems to be vanilla behavior. They get cancelled because the pad is occupied. Why they don't just queue up to dock I don't know atm.
 
 3. *I wanna fix your shitty code*
-	- You are very welcome to make requests to the [github]().
+	- You are very welcome to make requests to the [github](https://github.com/runekn/x4-reactive-docking).
 
 ## TODO
 
