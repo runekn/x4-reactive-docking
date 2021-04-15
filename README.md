@@ -13,11 +13,12 @@ Carriers will not have this option and their 'Launched' mode remains unchanged.
 ## Requirements
 
 * SirNuke's Mod Support API [[Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=2042901274) | [Nexus](https://www.nexusmods.com/x4foundations/mods/503)]
+* Kuertee's UI Extention and HUD [[Nexus](https://www.nexusmods.com/x4foundations/mods/552)]
 
 ## Compatibility
 This mod is save compatible. You can add it to an existing save, and remove it without errors. If removed then groups with the 'Reactive' option enabled will simply change to 'Launched'.
 
-This mod is currently not compatible with other mods that change the loadout menu (forexample Subsystem Targeting Orders by Alkeena).
+This mod uses Kuertee's UI Extension and HUD for UI mod compatibility. What means that it should be compatible with any mod that changes UI if it also uses UI Extension and HUD.
 
 ## FAQ
 	
@@ -39,3 +40,4 @@ This mod is currently not compatible with other mods that change the loadout men
 
 ## Thanks to
 * Alkeena for making another mod that does somewhat the same things, so that I could easily see how to achieve what I wanted despite this being my first mod :P
+* Forleyor for making proper compatibility with Subsystem Targeting Orders
