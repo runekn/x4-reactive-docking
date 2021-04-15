@@ -6,6 +6,8 @@
 				<event_ui_triggered screen="'Lua_Loader'" control="'Ready'" />
 			</conditions>
 			<actions>
+				<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.kuertee_ui_extensions.ui.kuertee_menu_map'"/>
+            	<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.kuertee_ui_extensions.ui.kuertee_menu_docked'"/>
 				<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.reactive_docking.ui.reactivedocking'"/>
 			</actions>
 		</cue>
