@@ -80,7 +80,7 @@ function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode)
 		row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
 	-- Otherwise create a dropdown with the extra option
 	else
-		row[3]:setColSpan(11):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, height = config.mapRowHeight, startOption = function () getDockingStartingOrder(inputobject, i) end })
+		row[3]:setColSpan(11):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, height = config.mapRowHeight, startOption = function () return getDockingStartingOrder(inputobject, i) end })
 		row[3].handlers.onDropDownActivated = function () menu.noupdate = true end
 		row[3].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption); menu.noupdate = false end
 	end
@@ -99,7 +99,7 @@ function do_menu.addReactiveDockingDockMenu(row, inputobject, i)
 		row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
 	-- Otherwise create a dropdown with the extra option
 	else
-		row[7]:setColSpan(5):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, startOption = function () getDockingStartingOrder(menu.currentplayership, i) end })
+		row[7]:setColSpan(5):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(menu.currentplayership, i) end })
 		row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(menu.currentplayership, i, newdockingoption) end
 	end
 	return true
