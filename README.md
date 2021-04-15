@@ -1,4 +1,4 @@
-# Reactive Docking v0.1
+# Reactive Docking
 
 ## Description
 In vanilla X4: Foundations subordinates assigned to a carrier with the 'Launched' option will remain docked until something relevant to their group's order happens. 
@@ -36,15 +36,6 @@ This mod is currently not compatible with other mods that change the loadout men
 ## Known bugs
 
 * Error logs on changing pilot on ship that had reactive mode enabled. Though it doesn't seem to have an impact.
-
-## TODO
-
-* v1
-	- Make compatible with STO
-
-
-
-This is a v0.1 launch because I want to at least make it compatible with Subsystem Targeting Orders before I consider it done.
 
 ## Thanks to
 * Alkeena for making another mod that does somewhat the same things, so that I could easily see how to achieve what I wanted despite this being my first mod :P
