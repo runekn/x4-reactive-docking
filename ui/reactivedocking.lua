@@ -38,11 +38,49 @@ local config = {
 		{ id = "gascollector",	name = ReadText(20214, 400) },
 		{ id = "defence",		name = ReadText(20214, 300) },
 		{ id = "transport",		name = ReadText(20214, 900) },
-	}
+	},
 	------------------
+	-- For Subsystem Targeting Orders --
+	turretmodes = {
+		[1] = { id = "defend",          text = ReadText(1001, 8613),    icon = "",  displayremoveoption = false },
+		[2] = { id = "attackenemies",   text = ReadText(1001, 8614),    icon = "",  displayremoveoption = false },
+		[3] = { id = "attackcapital",   text = ReadText(1001, 8624),    icon = "",  displayremoveoption = false },
+		[4] = { id = "attackfighters",  text = ReadText(1001, 8625),    icon = "",  displayremoveoption = false },
+		[5] = { id = "mining",          text = ReadText(1001, 8616),    icon = "",  displayremoveoption = false },
+		[6] = { id = "missiledefence",  text = ReadText(1001, 8615),    icon = "",  displayremoveoption = false },
+		[7] = { id = "autoassist",      text = ReadText(1001, 8617),    icon = "",  displayremoveoption = false },
+	},
+	turretmodesstation = { 
+		[1] = { id = "defend",          text = ReadText(1001, 8613),    icon = "",  displayremoveoption = false }, 
+		[2] = { id = "attackenemies",   text = ReadText(1001, 8614),    icon = "",  displayremoveoption = false }, 
+		[3] = { id = "attackcapital",   text = ReadText(1001, 8624),    icon = "",  displayremoveoption = false }, 
+		[4] = { id = "attackfighters",  text = ReadText(1001, 8625),    icon = "",  displayremoveoption = false }, 
+		[5] = { id = "missiledefence",  text = ReadText(1001, 8615),    icon = "",  displayremoveoption = false }, 
+	}, 
+	turretmodesexpanded = { 
+		[1] = { id = "defend",          text = ReadText(1001, 8613),    icon = "",  displayremoveoption = false },
+		[2] = { id = "attackenemies",   text = ReadText(1001, 8614),    icon = "",  displayremoveoption = false },
+		[3] = { id = "attackcapital",   text = ReadText(1001, 8624),    icon = "",  displayremoveoption = false },
+		[4] = { id = "attackfighters",  text = ReadText(1001, 8625),    icon = "",  displayremoveoption = false },
+		[5] = { id = "mining",          text = ReadText(1001, 8616),    icon = "",  displayremoveoption = false },
+		[6] = { id = "missiledefence",  text = ReadText(1001, 8615),    icon = "",  displayremoveoption = false },
+		[7] = { id = "autoassist",      text = ReadText(1001, 8617),    icon = "",  displayremoveoption = false },
+		[8] = { id = "engines",   text = ReadText(92015, 5000), icon = "",  displayremoveoption = false },
+		[9] = { id = "shields",   text = ReadText(92015, 5001), icon = "",  displayremoveoption = false },
+		[10] = { id = "weps_m", text = ReadText(92015, 5002), icon = "",  displayremoveoption = false },
+		[11] = { id = "weps_l", text = ReadText(92015, 5003), icon = "",  displayremoveoption = false },
+		[12] = { id = "missiles", text = ReadText(92015, 5004), icon = "",  displayremoveoption = false },
+		[13] = { id = "batteries", text = ReadText(92015, 5005), icon = "",  displayremoveoption = false },
+		[14] = { id = "disable", text = ReadText(92015, 5006), icon = "",  displayremoveoption = false },
+		[15] = { id = "targetsubclear", text = ReadText(92015, 5007),    icon = "",  displayremoveoption = false },
+	}, 
+	turretmode_t = { ["engines"] = "engines", ["shields"] = "shields", ["weps_m"] = "weps_m", ["weps_l"] = "weps_l", ["missiles"] = "missiles", ["batteries"] = "batteries", ["disable"] = "disable" },
+	-----------------------------------
 }
 
 local function init()
+	DebugError("Reactive Docking UI Init")
+	
 	menu = Lib.Get_Egosoft_Menu("MapMenu")
 	menu.setupLoadoutInfoSubmenuRows = do_menu.setupLoadoutInfoSubmenuRows
 	

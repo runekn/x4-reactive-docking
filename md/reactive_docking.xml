@@ -3,7 +3,7 @@
 	<cues>
 		<cue name="OnLuaLoaderReady">
 			<conditions>
-				<event_ui_triggered screen="'Lua_Loader'" control="'Ready'" />
+				<event_cue_completed cue="md.al_subsystem_targeting_orders.OnLuaLoaderReady" />
 			</conditions>
 			<actions>
 				<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.reactive_docking.ui.reactivedocking'"/>
