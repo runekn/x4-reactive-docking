@@ -41,7 +41,7 @@ local config = {
 	}
 	------------------
 }
- 
+
 local function init()
 	menu = Lib.Get_Egosoft_Menu("MapMenu")
 	menu.setupLoadoutInfoSubmenuRows = do_menu.setupLoadoutInfoSubmenuRows
@@ -345,20 +345,33 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 			if (#menu.turrets > 0) or (#menu.turretgroups > 0) then
 				if mode == "ship" then
-					local turretmodes = {
-						[1] = { id = "defend",			text = ReadText(1001, 8613),	icon = "",	displayremoveoption = false },
-						[2] = { id = "attackenemies",	text = ReadText(1001, 8614),	icon = "",	displayremoveoption = false },
-						[3] = { id = "attackcapital",	text = ReadText(1001, 8624),	icon = "",	displayremoveoption = false },
-						[4] = { id = "attackfighters",	text = ReadText(1001, 8625),	icon = "",	displayremoveoption = false },
-						[5] = { id = "mining",			text = ReadText(1001, 8616),	icon = "",	displayremoveoption = false },
-						[6] = { id = "missiledefence",	text = ReadText(1001, 8615),	icon = "",	displayremoveoption = false },
-						[7] = { id = "autoassist",		text = ReadText(1001, 8617),	icon = "",	displayremoveoption = false },
-					}
 
+					local pilotentityid = GetControlEntity(inputobject)
+					
 					local row = inputtable:addRow("info_turretconfig", { bgColor = Helper.color.transparent })
 					row[2]:setColSpan(3):createText(ReadText(1001, 2963))
-					row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all") end })
-					row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllTurretModes(inputobject, newturretmode) end
+					row[5]:setColSpan(9):createDropDown(config.turretmodesexpanded, { startOption = function ()
+						local startoption = menu.getDropDownTurretModeOption(inputobject, "all")
+						if GetNPCBlackboard(pilotentityid, "$SubTargetPref") ~= "" and GetNPCBlackboard(pilotentityid, "$SubTargetPref") then
+							startoption = GetNPCBlackboard(pilotentityid, "$SubTargetPref")
+						end
+						return startoption
+					end
+					})
+					row[5].handlers.onDropDownConfirmed = function(_, newturretmode)	
+
+						if config.turretmode_t[newturretmode] then
+							AddUITriggeredEvent("WeaponModeChanged", "onWeaponModeSelected", newturretmode)
+							SetNPCBlackboard(pilotentityid, "$SubTargetPref", newturretmode)
+						elseif newturretmode == "targetsubclear" then
+							menu.noupdate = false
+							AddUITriggeredEvent("WeaponModeChanged", "onWeaponModeSelected", newturretmode)
+							SetNPCBlackboard(pilotentityid, "$SubTargetPref", "")
+						else
+							menu.noupdate = false
+							C.SetAllTurretModes(inputobject, newturretmode)
+						end
+					end
 					row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
 					local row = inputtable:addRow("info_turretconfig_2", { bgColor = Helper.color.transparent })
@@ -371,7 +384,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 						local row = inputtable:addRow("info_turretconfig" .. i, { bgColor = Helper.color.transparent })
 						row[2]:setColSpan(3):createText(ffi.string(C.GetComponentName(turret)))
-						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(turret) end })
+						row[5]:setColSpan(9):createDropDown(config.turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(turret) end })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetWeaponMode(turret, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 						dropdownCount = dropdownCount + 1
@@ -391,7 +404,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 						local row = inputtable:addRow("info_turretgroupconfig" .. i, { bgColor = Helper.color.transparent })
 						row[2]:setColSpan(3):createText(name, { color = (group.operational > 0) and Helper.color.white or Helper.color.red })
-						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, group.context, group.path, group.group) end, active = group.operational > 0 })
+						row[5]:setColSpan(9):createDropDown(config.turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, group.context, group.path, group.group) end, active = group.operational > 0 })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetTurretGroupMode2(inputobject, group.context, group.path, group.group, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 						dropdownCount = dropdownCount + 1
@@ -404,19 +417,11 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 						row[5].handlers.onClick = function () return C.SetTurretGroupArmed(inputobject, group.context, group.path, group.group, not C.IsTurretGroupArmed(inputobject, group.context, group.path, group.group)) end
 					end
 				elseif mode == "station" then
-					local turretmodes = {
-						[1] = { id = "defend",			text = ReadText(1001, 8613),	icon = "",	displayremoveoption = false },
-						[2] = { id = "attackenemies",	text = ReadText(1001, 8614),	icon = "",	displayremoveoption = false },
-						[3] = { id = "attackcapital",	text = ReadText(1001, 8624),	icon = "",	displayremoveoption = false },
-						[4] = { id = "attackfighters",	text = ReadText(1001, 8625),	icon = "",	displayremoveoption = false },
-						[5] = { id = "missiledefence",	text = ReadText(1001, 8615),	icon = "",	displayremoveoption = false },
-					}
-
 					if hasnormalturrets then
 						-- non-missile
 						local row = inputtable:addRow("info_turretconfig", { bgColor = Helper.color.transparent })
 						row[2]:setColSpan(3):createText(ReadText(1001, 8397))
-						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all", false) end, active = hasoperationalnormalturrets, mouseOverText = (not hasoperationalnormalturrets) and ReadText(1026, 3235) or nil })
+						row[5]:setColSpan(9):createDropDown(config.turretmodesstation, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all", false) end, active = hasoperationalnormalturrets, mouseOverText = (not hasoperationalnormalturrets) and ReadText(1026, 3235) or nil })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllNonMissileTurretModes(inputobject, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
@@ -428,7 +433,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 						-- missile
 						local row = inputtable:addRow("info_turretconfig_missile", { bgColor = Helper.color.transparent })
 						row[2]:setColSpan(3):createText(ReadText(1001, 9031))
-						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all", true) end, active = hasoperationalmissileturrets, mouseOverText = (not hasoperationalnormalturrets) and ReadText(1026, 3235) or nil })
+						row[5]:setColSpan(9):createDropDown(config.turretmodesstation, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all", true) end, active = hasoperationalmissileturrets, mouseOverText = (not hasoperationalnormalturrets) and ReadText(1026, 3235) or nil })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllMissileTurretModes(inputobject, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
@@ -940,7 +945,6 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	end
 end
 
-
 function do_menu.display()
 	local menu = dock_menu
 	Helper.removeAllWidgetScripts(menu)
@@ -1347,22 +1351,34 @@ function do_menu.display()
 
 				local row = table_header:addRow(false, { bgColor = Helper.color.unselectable })
 				row[2]:createText(ReadText(1001, 8620), { font = Helper.standardFontBold, halign = "center" })
-				row[7]:createText(ReadText(1001, 12),   { font = Helper.standardFontBold, halign = "center" })
-
-				local turretmodes = {
-					[1] = { id = "defend",			text = ReadText(1001, 8613),	icon = "",	displayremoveoption = false },
-					[2] = { id = "attackenemies",	text = ReadText(1001, 8614),	icon = "",	displayremoveoption = false },
-					[3] = { id = "attackcapital",	text = ReadText(1001, 8624),	icon = "",	displayremoveoption = false },
-					[4] = { id = "attackfighters",	text = ReadText(1001, 8625),	icon = "",	displayremoveoption = false },
-					[5] = { id = "mining",			text = ReadText(1001, 8616),	icon = "",	displayremoveoption = false },
-					[6] = { id = "missiledefence",	text = ReadText(1001, 8615),	icon = "",	displayremoveoption = false },
-					[7] = { id = "autoassist",		text = ReadText(1001, 8617),	icon = "",	displayremoveoption = false },
-				}
+				row[7]:createText(ReadText(1001, 12),	 { font = Helper.standardFontBold, halign = "center" })
+					
+				local pilotentityid = GetControlEntity(menu.currentplayership)
 
 				local row = table_header:addRow("turret_config", { bgColor = Helper.color.transparent })
 				row[1]:createText(ReadText(1001, 2963))
-				row[2]:setColSpan(5):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, "all") end, helpOverlayID = "docked_turretconfig_modes", helpOverlayText = " ", helpOverlayHighlightOnly = true  })
-				row[2].handlers.onDropDownConfirmed = function(_, newturretmode) C.SetAllTurretModes(menu.currentplayership, newturretmode) end
+				
+				row[2]:setColSpan(5):createDropDown(config.turretmodesexpanded, { startOption = function ()
+						local startoption = menu.getDropDownTurretModeOption(menu.currentplayership, "all")
+						if GetNPCBlackboard(pilotentityid, "$SubTargetPref") ~= "" and GetNPCBlackboard(pilotentityid, "$SubTargetPref") then
+							startoption = GetNPCBlackboard(pilotentityid, "$SubTargetPref")
+						end
+						return startoption
+					end, helpOverlayID = "docked_turretconfig_modes", helpOverlayText = " ", helpOverlayHighlightOnly = true	})
+				row[2].handlers.onDropDownConfirmed = function(_, newturretmode)
+
+					if config.turretmode_t[newturretmode] then
+						AddUITriggeredEvent("WeaponModeChanged", "onWeaponModeSelected", newturretmode)
+						SetNPCBlackboard(pilotentityid, "$SubTargetPref", newturretmode)
+					elseif newturretmode == "targetsubclear" then
+						menu.noupdate = false
+						AddUITriggeredEvent("WeaponModeChanged", "onWeaponModeSelected", newturretmode)
+						SetNPCBlackboard(pilotentityid, "$SubTargetPref", "")
+					else
+						menu.noupdate = false
+						C.SetAllTurretModes(menu.currentplayership, newturretmode)
+					end
+				end
 				row[7]:setColSpan(5):createButton({ helpOverlayID = "docked_turretconfig_arm", helpOverlayText = " ", helpOverlayHighlightOnly = true  }):setText(function () return menu.areTurretsArmed(menu.currentplayership) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 				row[7].handlers.onClick = function () return C.SetAllTurretsArmed(menu.currentplayership, not menu.areTurretsArmed(menu.currentplayership)) end
 
@@ -1377,7 +1393,7 @@ function do_menu.display()
 						mouseovertext = turretname
 					end
 					row[1]:createText(turretname, { mouseOverText = mouseovertext })
-					row[2]:setColSpan(5):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(turret) end, helpOverlayID = "docked_turrets_modes".. turretscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  })
+					row[2]:setColSpan(5):createDropDown(config.turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(turret) end, helpOverlayID = "docked_turrets_modes".. turretscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true	})
 					row[2].handlers.onDropDownConfirmed = function(_, newturretmode) C.SetWeaponMode(turret, newturretmode) end
 					row[7]:setColSpan(5):createButton({helpOverlayID = "docked_turrets_arm" .. turretscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true   }):setText(function () return C.IsWeaponArmed(turret) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 					row[7].handlers.onClick = function () return C.SetWeaponArmed(turret, not C.IsWeaponArmed(turret)) end
@@ -1394,7 +1410,7 @@ function do_menu.display()
 						mouseovertext = groupname
 					end
 					row[1]:createText(groupname, { color = (group.operational > 0) and Helper.color.white or Helper.color.red, mouseOverText = mouseovertext })
-					row[2]:setColSpan(5):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, group.context, group.path, group.group) end, active = group.operational > 0, helpOverlayID = "docked_turretgroups_modes".. turretgroupscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  })
+					row[2]:setColSpan(5):createDropDown(config.turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, group.context, group.path, group.group) end, active = group.operational > 0, helpOverlayID = "docked_turretgroups_modes".. turretgroupscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true	})
 					row[2].handlers.onDropDownConfirmed = function(_, newturretmode) C.SetTurretGroupMode2(menu.currentplayership, group.context, group.path, group.group, newturretmode) end
 					row[7]:setColSpan(5):createButton({ helpOverlayID = "docked_turretgroups_arm" .. turretgroupscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  }):setText(function () return C.IsTurretGroupArmed(menu.currentplayership, group.context, group.path, group.group) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 					row[7].handlers.onClick = function () return C.SetTurretGroupArmed(menu.currentplayership, group.context, group.path, group.group, not C.IsTurretGroupArmed(menu.currentplayership, group.context, group.path, group.group)) end
