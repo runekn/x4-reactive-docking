@@ -3,7 +3,7 @@ local ffi = require("ffi")
 local C = ffi.C 
  
 local Lib = require("extensions.sn_mod_support_apis.lua_library") 
-local menu = {}
+local map_menu = {}
 local dock_menu = {}
 local do_menu = {}
 
@@ -13,14 +13,14 @@ local config = {
 		[2] = { id = "launched",		text = ReadText(1001, 8629),	icon = "",	displayremoveoption = false },
 		[3] = { id = "reactive",		text = ReadText(181114415, 1),	icon = "",	displayremoveoption = false }
 	},
-	mapRowHeight = Helper.standardTextHeight,
+	mapRowHeight = Helper.standardTextHeight
 }
- 
+
 local function init()
 	DebugError("Reactive Docking UI Init")
 
-	menu = Lib.Get_Egosoft_Menu("MapMenu")
-	menu.registerCallback("rd_addReactiveDockingMapMenu", do_menu.addReactiveDockingMapMenu)
+	map_menu = Lib.Get_Egosoft_Menu("MapMenu")
+	map_menu.registerCallback("rd_addReactiveDockingMapMenu", do_menu.addReactiveDockingMapMenu)
 	
 	dock_menu = Lib.Get_Egosoft_Menu("DockedMenu")
 	dock_menu.registerCallback("rd_addReactiveDockingDockMenu", do_menu.addReactiveDockingDockMenu)
@@ -45,76 +45,62 @@ local function getReactiveDocking(inputobject, i)
 		return reactiveList[i] == 1
 	end
 end
+
+local function getDockingStartingOrder(inputobject, i)
+	local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
+	local reactive = getReactiveDocking(inputobject, i)
+	if not docked and reactive then
+		return "reactive"
+	elseif not docked then
+		return "launched"
+	else
+		return "docked"
+	end
+end
+
+local function setDockingOptions(inputobject, i, newdockingoption)
+	local docked = true
+	local reactive = false
+	if newdockingoption == "reactive" then
+		docked = false
+		reactive = true
+	elseif newdockingoption == "launched" then
+		docked = false
+	end
+	C.SetSubordinateGroupDockAtCommander(inputobject, i, docked)
+	setReactiveDocking(inputobject, i, reactive)
+end
  
-function do_menu.addReactiveDockingMapMenu(row, inputobject, i)
-	local shiptype = GetComponentData(inputobject, "shiptype")
-	local iscarrier = shiptype == "carrier"
-	if iscarrier then
+function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext)
+	local menu = map_menu
+
+	-- Just create the vanilla button if its not a ship or a carrier
+	if mode ~= "ship" or GetComponentData(inputobject, "shiptype") == "carrier" then
 		row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 		row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
+	-- Otherwise create a dropdown with the extra option
 	else
-		row[3]:setColSpan(11):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, height = config.mapRowHeight, startOption = function () 
-			local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
-			local reactive = getReactiveDocking(inputobject, i)
-			if not docked and reactive then
-				return "reactive"
-			elseif not docked then
-				return "launched"
-			else
-				return "docked"
-			end
-		end })
+		row[3]:setColSpan(11):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, height = config.mapRowHeight, startOption = function () return getDockingStartingOrder(inputobject, i) end })
 		row[3].handlers.onDropDownActivated = function () menu.noupdate = true end
-		row[3].handlers.onDropDownConfirmed = function (_, newdockingoption)
-			local docked = true
-			local reactive = false
-			if newdockingoption == "reactive" then
-				docked = false
-				reactive = true
-			elseif newdockingoption == "launched" then
-				docked = false
-			end
-			C.SetSubordinateGroupDockAtCommander(inputobject, i, docked)
-			setReactiveDocking(inputobject, i, reactive)
-			menum.noupdate = false
-		end
+		row[3].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption); menu.noupdate = false end
 	end
 	return true
 end
 
 
-function do_menu.addReactiveDockingDockMenu(row, inputobject, i)
+function do_menu.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext)
 	local menu = dock_menu
 
 	local shiptype = GetComponentData(menu.currentplayership, "shiptype")
 	local iscarrier = shiptype == "carrier"
+	-- Just create the vanilla button if its a carrier
 	if iscarrier then
 		row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 		row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
+	-- Otherwise create a dropdown with the extra option
 	else
-		row[7]:setColSpan(5):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, startOption = function () 
-			local docked = C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)
-			local reactive = getReactiveDocking(inputobject, i)
-			if not docked and reactive then
-				return "reactive"
-			elseif not docked then
-				return "launched"
-			else
-				return "docked"
-			end
-		end })
-		row[7].handlers.onDropDownConfirmed = function (_, newdockingoption)
-			local docked = true
-			local reactive = false
-			if newdockingoption == "reactive" then
-				docked = false
-				reactive = true
-			elseif newdockingoption == "launched" then
-				docked = false
-			end
-			C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, docked)
-			setReactiveDocking(inputobject, i, reactive)
-		end
+		row[7]:setColSpan(5):createDropDown(config.subordinatedockingoptions, { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(menu.currentplayership, i) end })
+		row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(menu.currentplayership, i, newdockingoption) end
 	end
 	return true
 end 
