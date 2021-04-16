@@ -39,7 +39,7 @@ This mod achieves compatibility with other UI mods through the UI Extension and 
 * Error logs on changing pilot on ship that had reactive mode enabled. Though it doesn't seem to have an impact.
 
 ## Thanks to
-* Alkeena for making another mod that does somewhat the same things, so that I could easily see how to achieve what I wanted despite this being my first mod :P
+* Allectus for making another mod that does somewhat the same things, so that I could easily see how to achieve what I wanted despite this being my first mod :P
 * Forleyor for making the integration with UI Extension and HUD
 
 ## Updates
