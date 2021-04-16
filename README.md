@@ -2,10 +2,10 @@
 
 ## Description
 In vanilla X4: Foundations subordinates assigned to a carrier with the 'Launched' option will remain docked until something relevant to their group's order happens. 
-Forexample if leader is attacked then groups with 'defend' will launch to defend.
+For example if the leader is attacked then groups with 'defend' will launch to defend.
 Though for non-carrier capital ship subordinates in 'Launched' mode will instead remain launched constantly whether they are needed or not.
 
-This mod provides an additional docking option to non-carrier capital ships that has landing pads. This new docking option is called 'Reactive' and makes subordinates behave like they are carrier-based.
+This mod provides an additional docking option to non-carrier capital ships with landing pads. This new docking option is called 'Reactive' and makes subordinates behave like they are carrier-based.
 To provide this extra option the Docking/Launched button found in loadout info submenu and 'Enter' menu has been changed to a dropdown for non-carriers.
 
 Carriers will not have this option and their 'Launched' mode remains unchanged.
@@ -13,11 +13,12 @@ Carriers will not have this option and their 'Launched' mode remains unchanged.
 ## Requirements
 
 * SirNuke's Mod Support API [[Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=2042901274) | [Nexus](https://www.nexusmods.com/x4foundations/mods/503)]
+* Kuertee's's UI Extension and HUD version >= 2.0.6 [[Nexus](https://www.nexusmods.com/x4foundations/mods/552?tab=description)]
 
 ## Compatibility
 This mod is save compatible. You can add it to an existing save, and remove it without errors. If removed then groups with the 'Reactive' option enabled will simply change to 'Launched'.
 
-This mod is currently not compatible with other mods that change the loadout menu (forexample Subsystem Targeting Orders by Alkeena).
+This mod achieves compatibility with other UI mods through the UI Extension and HUD mod.
 
 ## FAQ
 	
@@ -39,3 +40,10 @@ This mod is currently not compatible with other mods that change the loadout men
 
 ## Thanks to
 * Alkeena for making another mod that does somewhat the same things, so that I could easily see how to achieve what I wanted despite this being my first mod :P
+* Forleyor for making the integration with UI Extension and HUD
+
+## Updates
+
+* v1.1: Better mod compatibility. Disabled Reactive modes for stations.
+* v1.0: Fixed ingame mod dependency. Added STO compatible version.
+* v0.1: Initial release.
