@@ -17,7 +17,7 @@
 		<set_value name="$groupindex" exact="this.assignedcontrolled.subordinategroupid" />
 		<set_value name="$reactivedocking" exact="@$target.pilot.$DockingReactive.{$groupindex} != 0" />
 		<!--<debug_text text="'Ship %s has reactive docking: %s'.[@this.assignedcontrolled.knownname, @$reactivedocking]" chance="$debugchance" />-->
-		<set_value name="$iscarrierbased" exact="(($reactivedocking and @$target.iscapitalship) or @$target.type == shiptype.carrier or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/>
+		<set_value name="$iscarrierbased" exact="($reactivedocking or @$target.type == shiptype.carrier or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/>
 		<!--<debug_text text="'Ship %s is carrier based: %s'.[@this.assignedcontrolled.knownname, @$iscarrierbased]" chance="$debugchance" />-->
 	</replace>
 </diff>

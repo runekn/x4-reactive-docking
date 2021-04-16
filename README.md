@@ -19,6 +19,7 @@ Carriers will not have this option and their 'Launched' mode remains unchanged.
 This mod is save compatible. You can add it to an existing save, and remove it without errors. If removed then groups with the 'Reactive' option enabled will simply change to 'Launched'.
 
 This mod achieves compatibility with other UI mods through the UI Extension and HUD mod.
+To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1 of this is required.
 
 ## FAQ
 	
