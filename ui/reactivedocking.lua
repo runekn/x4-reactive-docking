@@ -71,7 +71,7 @@ local function setDockingOptions(inputobject, i, newdockingoption)
 	setReactiveDocking(inputobject, i, reactive)
 end
  
-function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode)
+function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext)
 	local menu = map_menu
 
 	-- Just create the vanilla button if its not a ship or a carrier
@@ -88,7 +88,7 @@ function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode)
 end
 
 
-function do_menu.addReactiveDockingDockMenu(row, inputobject, i)
+function do_menu.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext)
 	local menu = dock_menu
 
 	local shiptype = GetComponentData(menu.currentplayership, "shiptype")
