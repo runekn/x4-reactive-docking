@@ -1,11 +1,8 @@
 -- ffi setup 
 local ffi = require("ffi") 
-local C = ffi.C 
- 
-local Lib = require("extensions.sn_mod_support_apis.lua_library") 
-local map_menu = {}
-local dock_menu = {}
-local do_menu = {}
+local C = ffi.C
+
+local L = {}
 
 local config = {
 	subordinatedockingoptions = {
@@ -20,16 +17,6 @@ local config = {
 	},
 	mapRowHeight = Helper.standardTextHeight
 }
-
-local function init()
-	DebugError("Reactive Docking UI Init")
-
-	map_menu = Lib.Get_Egosoft_Menu("MapMenu")
-	map_menu.registerCallback("rd_addReactiveDockingMapMenu", do_menu.addReactiveDockingMapMenu)
-	
-	dock_menu = Lib.Get_Egosoft_Menu("DockedMenu")
-	dock_menu.registerCallback("rd_addReactiveDockingDockMenu", do_menu.addReactiveDockingDockMenu)
-end 
 
 local function setReactiveDocking(inputobject, i, reactive)
 	local pilotentityid = GetControlEntity(inputobject)
@@ -88,9 +75,7 @@ local function getDockingOptionsList(inputobject)
 	end
 end
  
-function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext)
-	local menu = map_menu
-
+function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu)
 	-- Just create the vanilla button if its not a ship or a carrier
 	if mode ~= "ship" or inputobject == nil or GetComponentData(inputobject, "shiptype") == "carrier" then
 		row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
@@ -101,12 +86,9 @@ function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mo
 		row[3].handlers.onDropDownActivated = function () menu.noupdate = true end
 		row[3].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption); menu.noupdate = false end
 	end
-	return true
 end
 
-function do_menu.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext)
-	local menu = dock_menu
-
+function L.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, menu)
 	-- Just create the vanilla button if its a carrier
 	if inputobject == nil or GetComponentData(inputobject, "shiptype") == "carrier" then
 		row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
@@ -116,7 +98,6 @@ function do_menu.addReactiveDockingDockMenu(row, inputobject, i, active, mouseov
 		row[7]:setColSpan(5):createDropDown(getDockingOptionsList(inputobject), { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(inputobject, i) end })
 		row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption) end
 	end
-	return true
 end 
 
-init()
+return L
