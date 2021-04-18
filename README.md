@@ -45,6 +45,7 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 
 ## Updates
 
+* v1.3: Fixed error logs when opening loadout menu on ship without captain. Reactive mode is now disabled if there is no captain.
 * v1.2: Fixed reactive mode when leader is M ship.
 * v1.1: Better mod compatibility. Disabled Reactive modes for stations.
 * v1.0: Fixed ingame mod dependency. Added STO compatible version.
