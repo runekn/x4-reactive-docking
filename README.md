@@ -35,6 +35,9 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 4. *When I change the pilot or take manual control of a ship the Reactive mode is removed?*
 	- Yes, the only way I know to transfer changes from UI to the escort script is to use the pilot's blackboard. So the reactive mode is attached to the pilot.
 
+5. *My Reactive option is disabled?*
+	﻿- This should only happen if the leader ship has no pilot. If the ship has gotten a pilot and the option is still unavailable, try just closing and reopening the menu. If that still does not work, submit a bug report please.
+
 ## Known bugs
 
 * Error logs on changing pilot on ship that had reactive mode enabled. Though it doesn't seem to have an impact.
