@@ -4,7 +4,7 @@ local C = ffi.C
  
 local Lib = require("extensions.sn_mod_support_apis.lua_library") 
 local RdLib = require("extensions.reactive_docking.reactivedocking") 
-local menu = {}
+local map_menu = {}
 local dock_menu = {}
 local do_menu = {}
 
@@ -39,8 +39,8 @@ local config = {
 }
  
 local function init()
-	menu = Lib.Get_Egosoft_Menu("MapMenu")
-	menu.setupLoadoutInfoSubmenuRows = do_menu.setupLoadoutInfoSubmenuRows
+	map_menu = Lib.Get_Egosoft_Menu("MapMenu")
+	map_menu.setupLoadoutInfoSubmenuRows = do_menu.setupLoadoutInfoSubmenuRows
 	
 	dock_menu = Lib.Get_Egosoft_Menu("DockedMenu")
 	dock_menu.display = do_menu.display
@@ -66,7 +66,9 @@ local function getReactiveDocking(inputobject, i)
 	end
 end
  
-function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, instance) 
+function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, instance)
+	local menu = map_menu
+ 
   local object64 = ConvertStringTo64Bit(tostring(inputobject))
 	local isplayerowned, isonlineobject, isenemy, ishostile = GetComponentData(object64, "isplayerowned", "isonlineobject", "isenemy", "ishostile")
 	local titlecolor = Helper.color.white
@@ -1505,7 +1507,7 @@ function do_menu.display()
 						--row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 						--row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
 						-- With this
-						RdLib.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, dock_menu)
+						RdLib.addReactiveDockingDockMenu(row, menu.currentplayership, i, active, mouseovertext, dock_menu)
 						-- Runekn's Docking Options edits end here --
 					end
 				end
