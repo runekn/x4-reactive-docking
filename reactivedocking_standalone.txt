@@ -3,7 +3,7 @@ local ffi = require("ffi")
 local C = ffi.C 
  
 local Lib = require("extensions.sn_mod_support_apis.lua_library") 
-local RdLib = require("extensions.reactive_docking.ui.reactivedocking") 
+local RdLib = require("extensions.reactive_docking.reactivedocking") 
 local menu = {}
 local dock_menu = {}
 local do_menu = {}

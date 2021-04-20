@@ -17,10 +17,10 @@ local function init()
 		
 	if compat == true then
 		DebugError("Reactive Docking: Loading in High Compatibility Mode")
-		require('extensions.reactive_docking.ui.reactivedocking_uix')
+		require('extensions.reactive_docking.reactivedocking_uix')
 	else
 		DebugError("Reactive Docking: Loading in Stand Alone Mode")
-		require('extensions.reactive_docking.ui.reactivedocking_standalone')
+		require('extensions.reactive_docking.reactivedocking_standalone')
 	end
 		
 end 
