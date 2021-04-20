@@ -13,13 +13,13 @@ Carriers will not have this option and their 'Launched' mode remains unchanged.
 ## Requirements
 
 * SirNuke's Mod Support API [[Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=2042901274) | [Nexus](https://www.nexusmods.com/x4foundations/mods/503)]
-* Kuertee's's UI Extension and HUD version >= 2.0.6 [[Nexus](https://www.nexusmods.com/x4foundations/mods/552?tab=description)]
+* (OPTIONAL) Kuertee's's UI Extension and HUD version >= 2.0.6 [[Nexus](https://www.nexusmods.com/x4foundations/mods/552?tab=description)]
 
 ## Compatibility
 This mod is save compatible. You can add it to an existing save, and remove it without errors. If removed then groups with the 'Reactive' option enabled will simply change to 'Launched'.
 
 This mod achieves compatibility with other UI mods through the UI Extension and HUD mod.
-To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1 of this is required.
+To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1 of this mod is required.
 
 ## FAQ
 	
@@ -37,10 +37,6 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 
 5. *My Reactive option is disabled?*
 	﻿- This should only happen if the leader ship has no pilot. If the ship has gotten a pilot and the option is still unavailable, try just closing and reopening the menu. If that still does not work, submit a bug report please.
-
-## Known bugs
-
-* Error logs on changing pilot on ship that had reactive mode enabled. Though it doesn't seem to have an impact.
 
 ## Thanks to
 * Allectus for making another mod that does somewhat the same things, so that I could easily see how to achieve what I wanted despite this being my first mod :P
