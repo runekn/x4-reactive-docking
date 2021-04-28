@@ -22,20 +22,23 @@ This mod achieves compatibility with other UI mods through the UI Extension and 
 To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1 of this mod is required.
 
 ## FAQ
+
+1. *My fighters does not do anything when I set the new docking option.*
+	- Try issuing the fighters a "Fly And Wait" command. Then just remove it again. This should force the fighters to use the new docking option.
 	
-1. *When I have ships in storage, and one on the pad, and all are to launch why does the ship currently on the pad not launch first, rather than stow only to launch after another has?*
+2. *When I have ships in storage, and one on the pad, and all are to launch why does the ship currently on the pad not launch first, rather than stow only to launch after another has?*
 	- As far as I can tell this is vanilla behavior for the game. So I dunno what I could do about it. The game doesn't seem to make any priority for ships already on a pad if both it and one in storage needs to launch.
 
-2. *When they return to dock on my leader with one pad, only 1 ship docks and the rest just cancel their docking?*
+3. *When they return to dock on my leader with one pad, only 1 ship docks and the rest just cancel their docking?*
 	- Again, seems to be vanilla behavior. They get cancelled because the pad is occupied. Why they don't just queue up to dock I don't know atm.
 
-3. *I wanna fix your shitty code*
+4. *I wanna fix your shitty code*
 	- You are very welcome to make requests to the [github](https://github.com/runekn/x4-reactive-docking).
 
-4. *When I change the pilot or take manual control of a ship the Reactive mode is removed?*
+5. *When I change the pilot or take manual control of a ship the Reactive mode is removed?*
 	- Yes, the only way I know to transfer changes from UI to the escort script is to use the pilot's blackboard. So the reactive mode is attached to the pilot.
 
-5. *My Reactive option is disabled?*
+6. *My Reactive option is disabled?*
 	﻿- This should only happen if the leader ship has no pilot. If the ship has gotten a pilot and the option is still unavailable, try just closing and reopening the menu. If that still does not work, submit a bug report please.
 
 ## Thanks to
