@@ -37,39 +37,19 @@ local config = {
 	}
 	------------------
 }
- 
+
 local function init()
 	map_menu = Lib.Get_Egosoft_Menu("MapMenu")
 	map_menu.setupLoadoutInfoSubmenuRows = do_menu.setupLoadoutInfoSubmenuRows
 	
 	dock_menu = Lib.Get_Egosoft_Menu("DockedMenu")
 	dock_menu.display = do_menu.display
-end 
-
-local function setReactiveDocking(inputobject, i, reactive)
-	local pilotentityid = GetControlEntity(inputobject)
-	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
-	if reactiveList == nil then
-		reactiveList = {}
-	end
-	reactiveList[i] = reactive
-	SetNPCBlackboard(pilotentityid, "$DockingReactive", reactiveList)
 end
 
-local function getReactiveDocking(inputobject, i)
-	local pilotentityid = GetControlEntity(inputobject)
-	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
-	if reactiveList == nil or reactiveList[i] == nil then
-		return false
-	else 
-		return reactiveList[i] == 1
-	end
-end
- 
 function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, instance)
 	local menu = map_menu
- 
-  local object64 = ConvertStringTo64Bit(tostring(inputobject))
+	
+	local object64 = ConvertStringTo64Bit(tostring(inputobject))
 	local isplayerowned, isonlineobject, isenemy, ishostile = GetComponentData(object64, "isplayerowned", "isonlineobject", "isenemy", "ishostile")
 	local titlecolor = Helper.color.white
 	if isplayerowned then
@@ -77,7 +57,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		if object64 == C.GetPlayerObjectID() then
 			titlecolor = menu.holomapcolor.currentplayershipcolor
 		end
-	elseif isonlineobject and menu.getFilterOption("layer_think") and menu.getFilterOption("think_diplomacy_highlightvisitor") then
+	elseif isonlineobject and menu.getFilterOption("layer_other") and menu.getFilterOption("think_diplomacy_highlightvisitor") then
 		titlecolor = menu.holomapcolor.visitorcolor
 	elseif ishostile then
 		titlecolor = menu.holomapcolor.hostilecolor
@@ -138,8 +118,10 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	local equipment_mods =				cheatsecrecy or C.IsInfoUnlockedForPlayer(inputobject, "equipment_mods")
 
 	--- title ---
-	local row = inputtable:addRow(false, {fixed = true, bgColor = Helper.defaultTitleBackgroundColor})
-	row[1]:setColSpan(13):createText(ReadText(1001, 9413), Helper.headerRow1Properties)
+	local row = inputtable:addRow(false, { fixed = true, bgColor = Helper.defaultTitleBackgroundColor })
+	row[1]:setColSpan(13):createText(ReadText(1001, 2427), Helper.headerRowCenteredProperties)
+	local row = inputtable:addRow(false, { fixed = true, bgColor = Helper.defaultTitleBackgroundColor })
+	row[1]:setColSpan(13):createText(ReadText(1001, 9413), Helper.headerRowCenteredProperties)
 
 	local objectname = Helper.unlockInfo(nameinfo, ffi.string(C.GetComponentName(inputobject)))
 	-- object name
@@ -290,6 +272,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 			local hasmissileturrets = false
 			local hasoperationalnormalturrets = false
 			local hasoperationalmissileturrets = false
+			local hasonlytugturrets = true
 
 			local row = inputtable:addRow(false, { bgColor = Helper.defaultTitleBackgroundColor })
 			row[1]:setColSpan(13):createText(ReadText(1001, 8612), Helper.headerRowCenteredProperties) -- Turret Behaviour
@@ -305,12 +288,16 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							hasmissileturrets = hasmissileturrets or ismissileturret
 							hasnormalturrets = hasnormalturrets or (not ismissileturret)
 						end
+						if not GetComponentData(ConvertStringTo64Bit(tostring(current)), "istugweapon") then
+							hasonlytugturrets = false
+						end
 						table.insert(menu.turrets, current)
 					end
 				end
 			end
 
 			menu.turretgroups = {}
+			local turretsizecounts = {}
 			local n = C.GetNumUpgradeGroups(inputobject, "")
 			local buf = ffi.new("UpgradeGroup2[?]", n)
 			n = C.GetUpgradeGroups2(buf, n, inputobject, "")
@@ -320,8 +307,10 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					local groupinfo = C.GetUpgradeGroupInfo2(inputobject, "", group.context, group.path, group.group, "turret")
 					if (groupinfo.count > 0) then
 						group.operational = groupinfo.operational
+						group.currentcomponent = groupinfo.currentcomponent
 						group.currentmacro = ffi.string(groupinfo.currentmacro)
 						group.slotsize = ffi.string(groupinfo.slotsize)
+						group.sizecount = 0
 						if (not hasmissileturrets) or (not hasnormalturrets) then
 							local ismissileturret = IsMacroClass(group.currentmacro, "missileturret")
 							hasmissileturrets = hasmissileturrets or ismissileturret
@@ -336,26 +325,33 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 								end
 							end
 						end
+						if not GetComponentData(ConvertStringTo64Bit(tostring(group.currentcomponent)), "istugweapon") then
+							hasonlytugturrets = false
+						end
+
+						if group.slotsize ~= "" then
+							if turretsizecounts[group.slotsize] then
+								turretsizecounts[group.slotsize] = turretsizecounts[group.slotsize] + 1
+							else
+								turretsizecounts[group.slotsize] = 1
+							end
+							group.sizecount = turretsizecounts[group.slotsize]
+						end
+
 						table.insert(menu.turretgroups, group)
 					end
 				end
 			end
+			
+			if #menu.turretgroups > 0 then
+				table.sort(menu.turretgroups, Helper.sortSlots)
+			end
 
 			if (#menu.turrets > 0) or (#menu.turretgroups > 0) then
 				if mode == "ship" then
-					local turretmodes = {
-						[1] = { id = "defend",			text = ReadText(1001, 8613),	icon = "",	displayremoveoption = false },
-						[2] = { id = "attackenemies",	text = ReadText(1001, 8614),	icon = "",	displayremoveoption = false },
-						[3] = { id = "attackcapital",	text = ReadText(1001, 8624),	icon = "",	displayremoveoption = false },
-						[4] = { id = "attackfighters",	text = ReadText(1001, 8625),	icon = "",	displayremoveoption = false },
-						[5] = { id = "mining",			text = ReadText(1001, 8616),	icon = "",	displayremoveoption = false },
-						[6] = { id = "missiledefence",	text = ReadText(1001, 8615),	icon = "",	displayremoveoption = false },
-						[7] = { id = "autoassist",		text = ReadText(1001, 8617),	icon = "",	displayremoveoption = false },
-					}
-
 					local row = inputtable:addRow("info_turretconfig", { bgColor = Helper.color.transparent })
 					row[2]:setColSpan(3):createText(ReadText(1001, 2963))
-					row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all") end })
+					row[5]:setColSpan(9):createDropDown(Helper.getTurretModes(nil, not hasonlytugturrets), { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all") end })
 					row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllTurretModes(inputobject, newturretmode) end
 					row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
@@ -369,7 +365,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 						local row = inputtable:addRow("info_turretconfig" .. i, { bgColor = Helper.color.transparent })
 						row[2]:setColSpan(3):createText(ffi.string(C.GetComponentName(turret)))
-						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(turret) end })
+						row[5]:setColSpan(9):createDropDown(Helper.getTurretModes(turret), { startOption = function () return menu.getDropDownTurretModeOption(turret) end })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetWeaponMode(turret, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 						dropdownCount = dropdownCount + 1
@@ -384,12 +380,12 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 					for i, group in ipairs(menu.turretgroups) do
 						inputtable:addEmptyRow(config.mapRowHeight / 2)
-
-						local name = ReadText(1001, 8023) .. " " .. i .. ((group.currentmacro ~= "") and (" (" .. menu.getSlotSizeText(group.slotsize) .. " " .. GetMacroData(group.currentmacro, "shortname") .. ")") or "")
+						
+						local name = ReadText(1001, 8023) .. " " .. Helper.getSlotSizeText(group.slotsize) .. group.sizecount .. ((group.currentmacro ~= "") and (" (" .. Helper.getSlotSizeText(group.slotsize) .. " " .. GetMacroData(group.currentmacro, "shortname") .. ")") or "")
 
 						local row = inputtable:addRow("info_turretgroupconfig" .. i, { bgColor = Helper.color.transparent })
 						row[2]:setColSpan(3):createText(name, { color = (group.operational > 0) and Helper.color.white or Helper.color.red })
-						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, group.context, group.path, group.group) end, active = group.operational > 0 })
+						row[5]:setColSpan(9):createDropDown(Helper.getTurretModes(group.currentcomponent), { startOption = function () return menu.getDropDownTurretModeOption(inputobject, group.context, group.path, group.group) end, active = group.operational > 0 })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetTurretGroupMode2(inputobject, group.context, group.path, group.group, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 						dropdownCount = dropdownCount + 1
@@ -545,10 +541,13 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							if purpose == "mine" then
 								groups[group].numassignableminingships = groups[group].numassignableminingships + 1
 							end
+							if shiptype == "tug" then
+								groups[group].numassignabletugships = groups[group].numassignabletugships + 1
+							end
 						else
 							local assignment = ffi.string(C.GetSubordinateGroupAssignment(inputobject, group))
 							usedassignments[assignment] = group
-							groups[group] = { assignment = assignment, subordinates = { subordinate }, numassignableresupplyships = (shiptype == "resupplier") and 1 or 0, numassignableminingships = (purpose == "mine") and 1 or 0 }
+							groups[group] = { assignment = assignment, subordinates = { subordinate }, numassignableresupplyships = (shiptype == "resupplier") and 1 or 0, numassignableminingships = (purpose == "mine") and 1 or 0, numassignabletugships = (shiptype == "tug") and 1 or 0 }
 						end
 					end
 				end
@@ -559,7 +558,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					row[1]:setColSpan(13):createText(ReadText(1001, 8626), Helper.headerRowCenteredProperties)
 
 					local isstation = C.IsComponentClass(inputobject, "station")
-					for i = 1, isstation and 4 or 10 do
+					for i = 1, isstation and 5 or 10 do
 						if groups[i] then
 							local supplyactive = (groups[i].numassignableresupplyships == #groups[i].subordinates) and ((not usedassignments["supplyfleet"]) or (usedassignments["supplyfleet"] == i))
 							local subordinateassignments = {
@@ -577,6 +576,8 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 								table.insert(subordinateassignments, { id = "trade", text = ReadText(20208, 40101), icon = "", displayremoveoption = false, active = tradeactive, mouseovertext = tradeactive and ((groups[i].numassignableminingships > 0) and (Helper.convertColorToText(Helper.color.warningorange) .. ReadText(1026, 8607)) or "") or ReadText(1026, 7840) })
 								local tradeforbuildstorageactive = (groups[i].numassignableminingships == 0) and ((not usedassignments["tradeforbuildstorage"]) or (usedassignments["tradeforbuildstorage"] == i))
 								table.insert(subordinateassignments, { id = "tradeforbuildstorage", text = ReadText(20208, 40801), icon = "", displayremoveoption = false, active = tradeforbuildstorageactive, mouseovertext = tradeforbuildstorageactive and "" or ReadText(1026, 8603) })
+								local salvageactive = (groups[i].numassignabletugships == #groups[i].subordinates) and ((not usedassignments["salvage"]) or (usedassignments["salvage"] == i))
+								table.insert(subordinateassignments, { id = "salvage", text = ReadText(20208, 41401), icon = "", displayremoveoption = false, active = salvageactive, mouseovertext = salvageactive and "" or ReadText(1026, 8610) })
 							elseif C.IsComponentClass(inputobject, "ship") then
 								table.insert(subordinateassignments, { id = "attack", text = ReadText(20208, 40901), icon = "", displayremoveoption = false })
 								table.insert(subordinateassignments, { id = "interception", text = ReadText(20208, 41001), icon = "", displayremoveoption = false })
@@ -907,7 +908,6 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	end
 end
 
-
 function do_menu.display()
 	local menu = dock_menu
 	Helper.removeAllWidgetScripts(menu)
@@ -917,16 +917,16 @@ function do_menu.display()
 	local xoffset = 0
 	local yoffset = 0
 
-	menu.frame = Helper.createFrameHandle(menu, { width = width, x = xoffset, y = yoffset, backgroundID = "solid", backgroundColor = Helper.color.semitransparent, standardButtons = ((menu.mode == "docked") and (menu.currentplayership ~= 0)) and {} or { close = true, back = true } })
+	menu.frame = Helper.createFrameHandle(menu, { width = width, x = xoffset, y = yoffset, backgroundID = "solid", backgroundColor = Helper.color.semitransparent, standardButtons = (((menu.mode == "docked") and (menu.currentplayership ~= 0)) or menu.secondarycontrolpost) and {} or { close = true, back = true } })
 
 	menu.createTopLevel(menu.frame)
 
 	local table_topleft, table_header, table_button, row
 
 	local isdocked = (menu.currentplayership ~= 0) and GetComponentData(menu.currentplayership, "isdocked")
-	local ownericon, owner, shiptrader, isdock, canbuildships, isplayerowned, issupplyship, canhavetradeoffers = GetComponentData(menu.currentcontainer, "ownericon", "owner", "shiptrader", "isdock", "canbuildships", "isplayerowned", "issupplyship", "canhavetradeoffers")
+	local ownericon, owner, shiptrader, isdock, canbuildships, isplayerowned, issupplyship, canhavetradeoffers, aipilot = GetComponentData(menu.currentcontainer, "ownericon", "owner", "shiptrader", "isdock", "canbuildships", "isplayerowned", "issupplyship", "canhavetradeoffers", "aipilot")
 	local cantrade = canhavetradeoffers and isdock
-	local canwareexchange = cantrade and isplayerowned
+	local canwareexchange = isplayerowned and ((not C.IsComponentClass(menu.currentcontainer, "ship")) or aipilot) 
 	--NB: equipment docks currently do not have ship traders
 	local dockedplayerships = {}
 	Helper.ffiVLA(dockedplayerships, "UniverseID", C.GetNumDockedShips, C.GetDockedShips, menu.currentcontainer, "player")
@@ -1003,7 +1003,7 @@ function do_menu.display()
 	if menu.mode == "cockpit" then
 		local row = table_header:addRow("buttonRow1", { bgColor = Helper.color.transparent, fixed = true })
 		row[1]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
-		local active = (menu.currentplayership ~= 0) and C.CanPlayerStandUp()
+		local active = ((menu.currentplayership ~= 0) or menu.secondarycontrolpost) and C.CanPlayerStandUp()
 		row[2]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 277), helpOverlayID = "docked_getup", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1002, 20014), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Get Up"
 		if active then
 			row[2].handlers.onClick = menu.buttonGetUp
@@ -1021,27 +1021,28 @@ function do_menu.display()
 					break
 				end
 			end
-			local active = menu.currentplayership ~= 0
+			local active = (menu.currentplayership ~= 0) or C.IsPlayerControlGroupValid()
 			row[2]:createButton(active and {helpOverlayID = "docked_stopmode", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(text, active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Stop Mode"
 			if active then
 				row[2].handlers.onClick = menu.buttonStopMode
 				row[2].properties.uiTriggerID = "stopmode"
 			end
 		else
-			local active = menu.currentplayership ~= 0
+			local active = (menu.currentplayership ~= 0) or C.IsPlayerControlGroupValid()
 			local modes = {}
 			if active then
 				for _, entry in ipairs(config.modes) do
-					local active = true
+					local entryactive = menu.currentplayership ~= 0
 					local visible = true
 					if entry.id == "travel" then
-						active = (menu.currentplayership ~= 0) and C.CanStartTravelMode(menu.currentplayership)
+						entryactive = entryactive and C.CanStartTravelMode(menu.currentplayership)
 					elseif entry.id == "seta" then
+						entryactive = true
 						visible = C.CanActivateSeta(false)
 					end
 					local mouseovertext = GetLocalizedKeyName("action", entry.action)
 					if visible then
-						table.insert(modes, { id = entry.id, text = entry.name, icon = "", displayremoveoption = false, active = active, mouseovertext = mouseovertext })
+						table.insert(modes, { id = entry.id, text = entry.name, icon = "", displayremoveoption = false, active = entryactive, mouseovertext = mouseovertext })
 					end
 				end
 			end
@@ -1277,6 +1278,7 @@ function do_menu.display()
 				end
 			end
 
+			local hasonlytugturrets = true
 			menu.turrets = {}
 			local numslots = tonumber(C.GetNumUpgradeSlots(menu.currentplayership, "", "turret"))
 			for j = 1, numslots do
@@ -1285,11 +1287,15 @@ function do_menu.display()
 					local current = C.GetUpgradeSlotCurrentComponent(menu.currentplayership, "turret", j)
 					if current ~= 0 then
 						table.insert(menu.turrets, current)
+						if not GetComponentData(ConvertStringTo64Bit(tostring(current)), "istugweapon") then
+							hasonlytugturrets = false
+						end
 					end
 				end
 			end
 
 			menu.turretgroups = {}
+			local turretsizecounts = {}
 			local n = C.GetNumUpgradeGroups(menu.currentplayership, "")
 			local buf = ffi.new("UpgradeGroup2[?]", n)
 			n = C.GetUpgradeGroups2(buf, n, menu.currentplayership, "")
@@ -1299,11 +1305,31 @@ function do_menu.display()
 					local groupinfo = C.GetUpgradeGroupInfo2(menu.currentplayership, "", group.context, group.path, group.group, "turret")
 					if (groupinfo.count > 0) then
 						group.operational = groupinfo.operational
+						group.currentcomponent = groupinfo.currentcomponent
 						group.currentmacro = ffi.string(groupinfo.currentmacro)
 						group.slotsize = ffi.string(groupinfo.slotsize)
+						group.sizecount = 0
+
+						if group.slotsize ~= "" then
+							if turretsizecounts[group.slotsize] then
+								turretsizecounts[group.slotsize] = turretsizecounts[group.slotsize] + 1
+							else
+								turretsizecounts[group.slotsize] = 1
+							end
+							group.sizecount = turretsizecounts[group.slotsize]
+						end
+
 						table.insert(menu.turretgroups, group)
+						
+						if not GetComponentData(ConvertStringTo64Bit(tostring(group.currentcomponent)), "istugweapon") then
+							hasonlytugturrets = false
+						end
 					end
 				end
+			end
+
+			if #menu.turretgroups > 0 then
+				table.sort(menu.turretgroups, Helper.sortSlots)
 			end
 
 			if (#menu.turrets > 0) or (#menu.turretgroups > 0) then
@@ -1316,19 +1342,9 @@ function do_menu.display()
 				row[2]:createText(ReadText(1001, 8620), { font = Helper.standardFontBold, halign = "center" })
 				row[7]:createText(ReadText(1001, 12),   { font = Helper.standardFontBold, halign = "center" })
 
-				local turretmodes = {
-					[1] = { id = "defend",			text = ReadText(1001, 8613),	icon = "",	displayremoveoption = false },
-					[2] = { id = "attackenemies",	text = ReadText(1001, 8614),	icon = "",	displayremoveoption = false },
-					[3] = { id = "attackcapital",	text = ReadText(1001, 8624),	icon = "",	displayremoveoption = false },
-					[4] = { id = "attackfighters",	text = ReadText(1001, 8625),	icon = "",	displayremoveoption = false },
-					[5] = { id = "mining",			text = ReadText(1001, 8616),	icon = "",	displayremoveoption = false },
-					[6] = { id = "missiledefence",	text = ReadText(1001, 8615),	icon = "",	displayremoveoption = false },
-					[7] = { id = "autoassist",		text = ReadText(1001, 8617),	icon = "",	displayremoveoption = false },
-				}
-
 				local row = table_header:addRow("turret_config", { bgColor = Helper.color.transparent })
 				row[1]:createText(ReadText(1001, 2963))
-				row[2]:setColSpan(5):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, "all") end, helpOverlayID = "docked_turretconfig_modes", helpOverlayText = " ", helpOverlayHighlightOnly = true  })
+				row[2]:setColSpan(5):createDropDown(Helper.getTurretModes(nil, not hasonlytugturrets), { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, "all") end, helpOverlayID = "docked_turretconfig_modes", helpOverlayText = " ", helpOverlayHighlightOnly = true  })
 				row[2].handlers.onDropDownConfirmed = function(_, newturretmode) C.SetAllTurretModes(menu.currentplayership, newturretmode) end
 				row[7]:setColSpan(5):createButton({ helpOverlayID = "docked_turretconfig_arm", helpOverlayText = " ", helpOverlayHighlightOnly = true  }):setText(function () return menu.areTurretsArmed(menu.currentplayership) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 				row[7].handlers.onClick = function () return C.SetAllTurretsArmed(menu.currentplayership, not menu.areTurretsArmed(menu.currentplayership)) end
@@ -1344,7 +1360,7 @@ function do_menu.display()
 						mouseovertext = turretname
 					end
 					row[1]:createText(turretname, { mouseOverText = mouseovertext })
-					row[2]:setColSpan(5):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(turret) end, helpOverlayID = "docked_turrets_modes".. turretscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  })
+					row[2]:setColSpan(5):createDropDown(Helper.getTurretModes(turret), { startOption = function () return menu.getDropDownTurretModeOption(turret) end, helpOverlayID = "docked_turrets_modes".. turretscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  })
 					row[2].handlers.onDropDownConfirmed = function(_, newturretmode) C.SetWeaponMode(turret, newturretmode) end
 					row[7]:setColSpan(5):createButton({helpOverlayID = "docked_turrets_arm" .. turretscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true   }):setText(function () return C.IsWeaponArmed(turret) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 					row[7].handlers.onClick = function () return C.SetWeaponArmed(turret, not C.IsWeaponArmed(turret)) end
@@ -1354,14 +1370,14 @@ function do_menu.display()
 				for i, group in ipairs(menu.turretgroups) do
 					local row = table_header:addRow("turret_config", { bgColor = Helper.color.transparent })
 					turretgroupscounter = turretgroupscounter + 1
-					local groupname = ReadText(1001, 8023) .. " " .. i .. ((group.currentmacro ~= "") and (" (" .. menu.getSlotSizeText(group.slotsize) .. " " .. GetMacroData(group.currentmacro, "shortname") .. ")") or "")
+					local groupname = ReadText(1001, 8023) .. " " .. Helper.getSlotSizeText(group.slotsize) .. group.sizecount .. ((group.currentmacro ~= "") and (" (" .. Helper.getSlotSizeText(group.slotsize) .. " " .. GetMacroData(group.currentmacro, "shortname") .. ")") or "")
 					local mouseovertext = ""
 					local textwidth = C.GetTextWidth(groupname, Helper.standardFont, Helper.scaleFont(Helper.standardFont, Helper.standardFontSize)) + Helper.scaleX(Helper.standardTextOffsetx)
 					if (textwidth > row[1]:getWidth()) then
 						mouseovertext = groupname
 					end
 					row[1]:createText(groupname, { color = (group.operational > 0) and Helper.color.white or Helper.color.red, mouseOverText = mouseovertext })
-					row[2]:setColSpan(5):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, group.context, group.path, group.group) end, active = group.operational > 0, helpOverlayID = "docked_turretgroups_modes".. turretgroupscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  })
+					row[2]:setColSpan(5):createDropDown(Helper.getTurretModes(group.currentcomponent ~= 0 and group.currentcomponent or nil), { startOption = function () return menu.getDropDownTurretModeOption(menu.currentplayership, group.context, group.path, group.group) end, active = group.operational > 0, helpOverlayID = "docked_turretgroups_modes".. turretgroupscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  })
 					row[2].handlers.onDropDownConfirmed = function(_, newturretmode) C.SetTurretGroupMode2(menu.currentplayership, group.context, group.path, group.group, newturretmode) end
 					row[7]:setColSpan(5):createButton({ helpOverlayID = "docked_turretgroups_arm" .. turretgroupscounter, helpOverlayText = " ", helpOverlayHighlightOnly = true  }):setText(function () return C.IsTurretGroupArmed(menu.currentplayership, group.context, group.path, group.group) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 					row[7].handlers.onClick = function () return C.SetTurretGroupArmed(menu.currentplayership, group.context, group.path, group.group, not C.IsTurretGroupArmed(menu.currentplayership, group.context, group.path, group.group)) end
@@ -1429,10 +1445,13 @@ function do_menu.display()
 						if purpose == "mine" then
 							groups[group].numassignableminingships = groups[group].numassignableminingships + 1
 						end
+						if shiptype == "tug" then
+							groups[group].numassignabletugships = groups[group].numassignabletugships + 1
+						end
 					else
 						local assignment = ffi.string(C.GetSubordinateGroupAssignment(menu.currentplayership, group))
 						usedassignments[assignment] = i
-						groups[group] = { assignment = assignment, subordinates = { subordinate }, numassignableresupplyships = (shiptype == "resupplier") and 1 or 0, numassignableminingships = (purpose == "mine") and 1 or 0 }
+						groups[group] = { assignment = assignment, subordinates = { subordinate }, numassignableresupplyships = (shiptype == "resupplier") and 1 or 0, numassignableminingships = (purpose == "mine") and 1 or 0, numassignabletugships= (shiptype == "tug") and 1 or 0 }
 					end
 				end
 			end
@@ -1463,6 +1482,8 @@ function do_menu.display()
 							table.insert(subordinateassignments, { id = "trade", text = ReadText(20208, 40101), icon = "", displayremoveoption = false, active = tradeactive, mouseovertext = tradeactive and ((groups[i].numassignableminingships > 0) and (Helper.convertColorToText(Helper.color.warningorange) .. ReadText(1026, 8607)) or "") or ReadText(1026, 7840) })
 							local tradeforbuildstorageactive = (groups[i].numassignableminingships == 0) and ((not usedassignments["tradeforbuildstorage"]) or (usedassignments["tradeforbuildstorage"] == i))
 							table.insert(subordinateassignments, { id = "tradeforbuildstorage", text = ReadText(20208, 40801), icon = "", displayremoveoption = false, active = tradeforbuildstorageactive, mouseovertext = tradeforbuildstorageactive and "" or ReadText(1026, 8603) })
+							local salvageactive = (groups[i].numassignabletugships == #groups[i].subordinates) and ((not usedassignments["salvage"]) or (usedassignments["salvage"] == i))
+							table.insert(subordinateassignments, { id = "salvage", text = ReadText(20208, 41401), icon = "", displayremoveoption = false, active = salvageactive, mouseovertext = salvageactive and "" or ReadText(1026, 8610) })
 						elseif C.IsComponentClass(menu.currentplayership, "ship") then
 							table.insert(subordinateassignments, { id = "attack", text = ReadText(20208, 40901), icon = "", displayremoveoption = false })
 							table.insert(subordinateassignments, { id = "interception", text = ReadText(20208, 41001), icon = "", displayremoveoption = false })
@@ -1516,11 +1537,19 @@ function do_menu.display()
 	else
 		local row = table_header:addRow("buttonRow1", { bgColor = Helper.color.transparent, fixed = true })
 		local active = canwareexchange
-		row[1]:createButton(active and {helpOverlayID = "docked_transferwares", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1001, 8618), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Transfer Wares"
+		local mouseovertext
+		if (not active) and isplayerowned then
+			if C.IsComponentClass(menu.currentcontainer, "ship") then
+				mouseovertext = ReadText(1026, 7830)
+			end
+		end
+		row[1]:createButton(active and { helpOverlayID = "docked_transferwares", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1001, 8618), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Transfer Wares"
 		if active then
 			row[1].handlers.onClick = function() return menu.buttonTrade(true) end
+		else
+			row[1].properties.mouseOverText = mouseovertext
 		end
-		local active = menu.currentplayership ~= 0
+		local active = (menu.currentplayership ~= 0) or menu.secondarycontrolpost
 		row[2]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 277), helpOverlayID = "docked_getup", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1002, 20014), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Get Up"
 		row[2].handlers.onClick = menu.buttonGetUp
 		local active = menu.currentplayership ~= 0
@@ -1539,6 +1568,7 @@ function do_menu.display()
 		row[2]:createButton(active and {helpOverlayID = "docked_trade", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1002, 9005), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Trade"
 		if active then
 			row[2].handlers.onClick = function() return menu.buttonTrade(false) end
+			row[2].properties.uiTriggerID = "docked_trade"
 		end
 		local active = canmodifyship
 		row[7]:createButton(active and {helpOverlayID = "docked_upgrade_repair", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(issupplyship and ReadText(1001, 7877) or ReadText(1001, 7841), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- Upgrade / Repair Ship
@@ -1552,7 +1582,55 @@ function do_menu.display()
 		end
 
 		local row = table_header:addRow("buttonRow3", { bgColor = Helper.color.transparent, fixed = true })
-		row[1]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
+		local currentactivity = GetPlayerActivity()
+		if currentactivity ~= "none" then
+			local text = ""
+			for _, entry in ipairs(config.modes) do
+				if entry.id == currentactivity then
+					text = entry.stoptext
+					break
+				end
+			end
+			local active = (menu.currentplayership ~= 0) or C.IsPlayerControlGroupValid()
+			row[1]:createButton(active and {helpOverlayID = "docked_stopmode", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(text, active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Stop Mode"
+			if active then
+				row[1].handlers.onClick = menu.buttonStopMode
+				row[1].properties.uiTriggerID = "stopmode"
+			end
+		else
+			local active = (menu.currentplayership ~= 0) or C.IsPlayerControlGroupValid()
+			local modes = {}
+			if active then
+				for _, entry in ipairs(config.modes) do
+					local entryactive = menu.currentplayership ~= 0
+					local visible = true
+					if entry.id == "travel" then
+						entryactive = entryactive and C.CanStartTravelMode(menu.currentplayership)
+					elseif entry.id == "seta" then
+						entryactive = true
+						visible = C.CanActivateSeta(false)
+					end
+					local mouseovertext = GetLocalizedKeyName("action", entry.action)
+					if visible then
+						table.insert(modes, { id = entry.id, text = entry.name, icon = "", displayremoveoption = false, active = entryactive, mouseovertext = mouseovertext })
+					end
+				end
+			end
+			row[1]:createDropDown(modes, {
+				helpOverlayID = "docked_modes",		
+				helpOverlayText = " ", 
+				helpOverlayHighlightOnly = true, 
+				height = Helper.standardButtonHeight,
+				startOption = "",
+				textOverride = ReadText(1002, 1001),
+				bgColor = active and Helper.defaultButtonBackgroundColor or Helper.defaultUnselectableButtonBackgroundColor,
+				highlightColor = active and Helper.defaultButtonHighlightColor or Helper.defaultUnselectableButtonHighlightColor
+			}):setTextProperties(active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- Modes
+			if active then
+				row[1].handlers.onDropDownConfirmed = menu.dropdownMode
+				row[1].properties.uiTriggerID = "startmode"
+			end
+		end
 		if menu.currentplayership ~= 0 then
 			row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), bgColor = menu.undockButtonBGColor, highlightColor = menu.undockButtonHighlightColor, helpOverlayID = "docked_undock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1002, 20013), { halign = "center", color = menu.undockButtonTextColor })	-- "Undock"
 			row[2].handlers.onClick = menu.buttonUndock
@@ -1583,6 +1661,6 @@ function do_menu.display()
 
 	-- display view/frame
 	menu.frame:display()
-end 
+end
 
 init()
