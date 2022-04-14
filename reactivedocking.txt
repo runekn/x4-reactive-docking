@@ -19,6 +19,8 @@ local config = {
 }
 
 local function setReactiveDocking(inputobject, i, reactive)
+	local carrier = GetComponentData(inputobject, "shiptype") == "carrier"
+	reactive = (reactive and not carrier) or (not reactive and carrier)
 	local pilotentityid = GetControlEntity(inputobject)
 	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
 	if reactiveList == nil then
@@ -42,9 +44,10 @@ local function getReactiveDocking(inputobject, i)
 end
 
 local function getDockingStartingOrder(inputobject, i)
+	local carrier = GetComponentData(inputobject, "shiptype") == "carrier"
 	local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
 	local reactive = getReactiveDocking(inputobject, i)
-	if not docked and reactive then
+	if not docked and (reactive and not carrier) or (not reactive and carrier) then
 		return "reactive"
 	elseif not docked then
 		return "launched"
@@ -76,8 +79,8 @@ local function getDockingOptionsList(inputobject)
 end
  
 function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu)
-	-- Just create the vanilla button if its not a ship or a carrier
-	if mode ~= "ship" or inputobject == nil or GetComponentData(inputobject, "shiptype") == "carrier" then
+	-- Just create the vanilla button if its not a ship
+	if mode ~= "ship" or inputobject == nil then
 		row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 		row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
 	-- Otherwise create a dropdown with the extra option
@@ -89,15 +92,8 @@ function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseove
 end
 
 function L.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, menu)
-	-- Just create the vanilla button if its a carrier
-	if inputobject == nil or GetComponentData(inputobject, "shiptype") == "carrier" then
-		row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
-		row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
-	-- Otherwise create a dropdown with the extra option
-	else
-		row[7]:setColSpan(5):createDropDown(getDockingOptionsList(inputobject), { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(inputobject, i) end })
-		row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption) end
-	end
+	row[7]:setColSpan(5):createDropDown(getDockingOptionsList(inputobject), { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(inputobject, i) end })
+	row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption) end
 end 
 
 return L

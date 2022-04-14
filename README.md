@@ -5,10 +5,11 @@ In vanilla X4: Foundations subordinates assigned to a carrier with the 'Launched
 For example if the leader is attacked then groups with 'defend' will launch to defend.
 Though for non-carrier capital ship subordinates in 'Launched' mode will instead remain launched constantly whether they are needed or not.
 
-This mod provides an additional docking option to non-carrier capital ships with landing pads. This new docking option is called 'Reactive' and makes subordinates behave like they are carrier-based.
-To provide this extra option the Docking/Launched button found in loadout info submenu and 'Enter' menu has been changed to a dropdown for non-carriers.
-
-Carriers will not have this option and their 'Launched' mode remains unchanged.
+This mod add additional docking options to cover both carrier and non-carrier behaviors for both shiptypes.
+In essence, the Docking/Launched button found in loadout info submenu and 'Enter' menu on ships has been changed to a dropdown with three options:
+1. Docked: Same behavior as vanilla. Subordinates will remain docked no matter what.
+2. Launched (default for non-carriers): Subordinates will remain launched, and only dock if leader wants to travel far distances.
+3. Reactive (default for carriers): Subordinates will dock, but launch if something happens that is relevant to their standing order.
 
 ## Requirements
 
@@ -48,6 +49,7 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 
 ## Updates
 
+* v2.0: Launched option for carrier groups now behave as non-carriers. Added Reactive option to carrier groups.
 * v1.4: Fixed compability with 5.0 when not using kuertee's UI mod
 * v1.3.1: Added Japanese by ArkBlade2015
 * v1.3: Fixed error logs when opening loadout menu on ship without captain. Reactive mode is now disabled if there is no captain.
