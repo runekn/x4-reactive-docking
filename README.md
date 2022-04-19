@@ -6,7 +6,7 @@ For example if the leader is attacked then groups with 'defend' will launch to d
 Though for non-carrier capital ship subordinates in 'Launched' mode will instead remain launched constantly whether they are needed or not.
 
 This mod add additional docking options to cover both carrier and non-carrier behaviors for both shiptypes.
-In essence, the Docking/Launched button found in loadout info submenu and 'Enter' menu on ships has been changed to a dropdown with three options:
+Specifically, the Docking/Launched button found in loadout info submenu and 'Enter' menu on ships has been changed to a dropdown with three options:
 1. Docked: Same behavior as vanilla. Subordinates will remain docked no matter what.
 2. Launched (default for non-carriers): Subordinates will remain launched, and only dock if leader wants to travel far distances.
 3. Reactive (default for carriers): Subordinates will dock, but launch if something happens that is relevant to their standing order.
