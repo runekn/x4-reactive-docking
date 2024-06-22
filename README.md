@@ -49,6 +49,8 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 
 ## Updates
 
+* v2.2: Updated standalone UI mode for 7.0
+* v2.1: Updated standalone UI mode for 6.0
 * v2.0: Launched option for carrier groups now behave as non-carriers. Added Reactive option to carrier groups.
 * v1.4: Fixed compability with 5.0 when not using kuertee's UI mod
 * v1.3.1: Added Japanese by ArkBlade2015

@@ -79,6 +79,9 @@ local function getDockingOptionsList(inputobject)
 end
  
 function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu)
+	if (type(active) == 'function') then
+		active = active()
+	end
 	-- Just create the vanilla button if its not a ship
 	if mode ~= "ship" or inputobject == nil then
 		row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
@@ -92,6 +95,9 @@ function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseove
 end
 
 function L.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, menu)
+	if (type(active) == 'function') then
+		active = active()
+	end
 	row[7]:setColSpan(5):createDropDown(getDockingOptionsList(inputobject), { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(inputobject, i) end })
 	row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption) end
 end 
