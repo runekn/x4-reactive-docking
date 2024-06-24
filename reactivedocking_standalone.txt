@@ -938,7 +938,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 end
 
 function do_menu.display()
-	local menu = map_menu
+	local menu = dock_menu
 	
 	Helper.removeAllWidgetScripts(menu)
 
