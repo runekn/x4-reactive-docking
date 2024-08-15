@@ -5,5 +5,8 @@
 	<page id="181114415" voice="no">
 		<t id="1">Reactive</t>
 		<t id="2">Disabled while ship is without a captain</t>
+		<t id="3">Reactive Docking</t>
+		<t id="4">Reactive as default for carriers</t>
+		<t id="5">Reactive as default for non-carriers</t>
 	</page>
 </language>

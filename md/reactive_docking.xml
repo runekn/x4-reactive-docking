@@ -20,5 +20,76 @@
 				<reset_cue cue="this" />
 			</actions>
 		</cue>
+		
+		
+		<cue name="Config" namespace="this">
+			<actions>
+				<set_value name="$default_carrier_reactive" exact="true" />
+				<set_value name="$default_noncarrier_reactive" exact="false" />
+				<set_value name="global.$rkn_rd" exact="this" />
+			</actions>
+			<cue name="Config_GameLoaded">
+				<conditions>
+					<event_game_loaded />
+				</conditions>
+				<actions>
+					<set_value name="global.$rkn_rd" exact="this" />
+					<reset_cue cue="this" />
+				</actions>
+			</cue>
+		</cue>
+		<cue name="StartSMO" instantiate="true">
+			<conditions>
+				<event_cue_signalled cue="md.Simple_Menu_Options.Reloaded"/>
+			</conditions>
+			<actions>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Register_Options_Menu"
+					param="table[
+						$id = 'rkn_rd_extension_options_menu',
+						$columns = 2,
+						$title = {181114415, 3},
+						$onOpen = BuildOptionsMenu
+					]" />
+				<cancel_cue cue="this" />
+			</actions>
+		</cue>
+		<cue name="BuildOptionsMenu" instantiate="true">
+			<conditions>
+				<event_cue_signalled />
+			</conditions>
+			<actions>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Add_Row"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 4}]" comment="Reactive as default for carriers"/>
+				<signal_cue_instantly
+					cue = "md.Simple_Menu_API.Make_CheckBox"
+					param = "table[
+						$id = 'default_carrier_reactive',
+						$checked = md.rkn_reactive_docking.Config.$default_carrier_reactive,
+						$col = 2,
+						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
+						$onClick = OnSMOCheckboxChange
+					]"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Add_Row"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 5}]" comment="Reactive as default for non-carriers"/>
+				<signal_cue_instantly
+					cue = "md.Simple_Menu_API.Make_CheckBox"
+					param = "table[
+						$id = 'default_noncarrier_reactive',
+						$checked = md.rkn_reactive_docking.Config.$default_noncarrier_reactive,
+						$col = 2,
+						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
+						$onClick = OnSMOCheckboxChange
+					]"/>
+			</actions>
+		</cue>
+		<cue name="OnSMOCheckboxChange" instantiate="true">
+			<conditions>
+				<event_cue_signalled />
+			</conditions>
+			<actions>
+				<set_value name="md.rkn_reactive_docking.Config.{'$' + event.param.$id}" exact="event.param.$checked" />
+				<cancel_cue cue = "this" />
+			</actions>
+		</cue>
 	</cues>
 </mdscript>

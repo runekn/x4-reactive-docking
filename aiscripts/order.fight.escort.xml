@@ -17,8 +17,15 @@
 		<set_value name="$groupindex" exact="this.assignedcontrolled.subordinategroupid" />
 		<set_value name="$reactivedocking" exact="@$target.pilot.$DockingReactive.{$groupindex} != 0" /> <!-- Get option. This option will be 1 if we want noncarrier based as reactive, or 0 if we want carrier based as reactive -->
 		<!--<debug_text text="'Ship %s has reactive docking: %s'.[@this.assignedcontrolled.knownname, @$reactivedocking]" chance="$debugchance" />-->
-		<set_value name="$iscarrierbased" exact="((@$target.type == shiptype.carrier) or this.assignedcontrolled.subordinategroupdockoverride)"/> <!-- Check if this is an actual carrier -->
-		<set_value name="$iscarrierbased" exact="(($reactivedocking and not $iscarrierbased) or (not $reactivedocking and $iscarrierbased) or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/> <!-- Set wanted docking behavior -->
+		<set_value name="$iscarrierbasedactual" exact="((@$target.type == shiptype.carrier) or this.assignedcontrolled.subordinategroupdockoverride)"/> <!-- Check if this is an actual carrier -->
+		<set_value name="$iscarrierbasedinvert" exact="(@global.$rkn_rd.$default_noncarrier_reactive and not $iscarrierbasedactual) or (@global.$rkn_rd.$default_carrier_reactive and $iscarrierbasedactual)"/>
+		<set_value name="$iscarrierbased" exact="(($reactivedocking and not $iscarrierbasedinvert) or (not $reactivedocking and $iscarrierbasedinvert) or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/> <!-- Set wanted docking behavior -->
+		<do_if value="this.ship.isplayerowned">
+			<debug_text text="'iscarrierbasedactual: ' + $iscarrierbasedactual" chance="100" />
+			<debug_text text="'default_noncarrier_reactive: ' + @global.$rkn_rd.$default_noncarrier_reactive" chance="100" />
+			<debug_text text="'iscarrierbasedinvert: ' + $iscarrierbasedinvert" chance="100" />
+			<debug_text text="'iscarrierbased: ' + $iscarrierbased" chance="100" />
+		</do_if>
 		<!--<debug_text text="'Ship %s is carrier based: %s'.[@this.assignedcontrolled.knownname, @$iscarrierbased]" chance="$debugchance" />-->
 	</replace>
 </diff>
