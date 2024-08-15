@@ -19,7 +19,8 @@ local config = {
 }
 
 local function setReactiveDocking(inputobject, i, reactive)
-	local carrier = GetComponentData(inputobject, "shiptype") == "carrier"
+	local shiptype, isplayerowned = GetComponentData(inputobject, "shiptype", "isplayerowned");
+	local carrier = shiptype == "carrier" or isplayerowned
 	reactive = (reactive and not carrier) or (not reactive and carrier)
 	local pilotentityid = GetControlEntity(inputobject)
 	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
@@ -44,7 +45,8 @@ local function getReactiveDocking(inputobject, i)
 end
 
 local function getDockingStartingOrder(inputobject, i)
-	local carrier = GetComponentData(inputobject, "shiptype") == "carrier"
+	local shiptype, isplayerowned = GetComponentData(inputobject, "shiptype", "isplayerowned");
+	local carrier = shiptype == "carrier" or isplayerowned
 	local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
 	local reactive = getReactiveDocking(inputobject, i)
 	if not docked and (reactive and not carrier) or (not reactive and carrier) then

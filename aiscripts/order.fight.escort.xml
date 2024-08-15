@@ -18,6 +18,9 @@
 		<set_value name="$reactivedocking" exact="@$target.pilot.$DockingReactive.{$groupindex} != 0" /> <!-- Get option. This option will be 1 if we want noncarrier based as reactive, or 0 if we want carrier based as reactive -->
 		<!--<debug_text text="'Ship %s has reactive docking: %s'.[@this.assignedcontrolled.knownname, @$reactivedocking]" chance="$debugchance" />-->
 		<set_value name="$iscarrierbased" exact="((@$target.type == shiptype.carrier) or this.assignedcontrolled.subordinategroupdockoverride)"/> <!-- Check if this is an actual carrier -->
+		<do_if value="this.ship.isplayerowned">
+				<set_value name="$iscarrierbased" exact="true"/>
+		</do_if>
 		<set_value name="$iscarrierbased" exact="(($reactivedocking and not $iscarrierbased) or (not $reactivedocking and $iscarrierbased) or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/> <!-- Set wanted docking behavior -->
 		<!--<debug_text text="'Ship %s is carrier based: %s'.[@this.assignedcontrolled.knownname, @$iscarrierbased]" chance="$debugchance" />-->
 	</replace>
