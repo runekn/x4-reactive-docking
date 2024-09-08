@@ -62,6 +62,7 @@ local function setDockingOptions(inputobject, i, newdockingoption)
 	if newdockingoption == "reactive" then
 		docked = false
 		reactive = true
+		local k= reactive and C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i))
 	elseif newdockingoption == "launched" then
 		docked = false
 	end
