@@ -57,13 +57,22 @@ local function getDockingStartingOrder(inputobject, i)
 end
 
 local function setDockingOptions(inputobject, i, newdockingoption)
-	local docked = true
-	local reactive = false
+	
+	local isdocked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
+	local docked
+	local reactive
 	if newdockingoption == "reactive" then
 		docked = false
 		reactive = true
+		local k = C.SetSubordinateGroupDockAtCommander(inputobject, i, not isdocked)	-- order değiştiriyoruz ki aiscript yakalasın
 	elseif newdockingoption == "launched" then
 		docked = false
+		reactive = false
+		--local k = isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, false)	-- dock olanları kaldırıyoruz, ai.reactive güncellenmesi için
+	else
+		docked = true
+		reactive = false
+		--local k = not isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, true)	-- dock olmayanları docka gönderiyoruz, ai.reactive güncellenmesi için
 	end
 	C.SetSubordinateGroupDockAtCommander(inputobject, i, docked)
 	setReactiveDocking(inputobject, i, reactive)
