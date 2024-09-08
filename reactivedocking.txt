@@ -68,11 +68,11 @@ local function setDockingOptions(inputobject, i, newdockingoption)
 	elseif newdockingoption == "launched" then
 		docked = false
 		reactive = false
-		local k = isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, false)	-- dock olanları kaldırıyoruz, ai.reactive güncellenmesi için
+		--local k = isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, false)	-- dock olanları kaldırıyoruz, ai.reactive güncellenmesi için
 	else
 		docked = true
 		reactive = false
-		local k = not isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, true)	-- dock olmayanları docka gönderiyoruz, ai.reactive güncellenmesi için
+		--local k = not isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, true)	-- dock olmayanları docka gönderiyoruz, ai.reactive güncellenmesi için
 	end
 	setReactiveDocking(inputobject, i, reactive)
 
