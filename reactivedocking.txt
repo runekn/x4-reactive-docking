@@ -74,9 +74,8 @@ local function setDockingOptions(inputobject, i, newdockingoption)
 		reactive = false
 		--local k = not isdocked and C.SetSubordinateGroupDockAtCommander(inputobject, i, true)	-- dock olmayanları docka gönderiyoruz, ai.reactive güncellenmesi için
 	end
-	setReactiveDocking(inputobject, i, reactive)
-
 	C.SetSubordinateGroupDockAtCommander(inputobject, i, docked)
+	setReactiveDocking(inputobject, i, reactive)
 end
 
 local function getDockingOptionsList(inputobject)
