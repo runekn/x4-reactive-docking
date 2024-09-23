@@ -67,13 +67,22 @@ local function getDockingStartingOrder(inputobject, i)
 end
 
 local function setDockingOptions(inputobject, i, newdockingoption)
-	local docked = true
-	local reactive = false
+	
+	local isdocked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
+	local docked
+	local reactive
 	if newdockingoption == "reactive" then
 		docked = false
 		reactive = true
 	elseif newdockingoption == "launched" then
 		docked = false
+		reactive = false
+	else
+		docked = true
+		reactive = false
+	end
+	if isdocked == docked then
+		C.SetSubordinateGroupDockAtCommander(inputobject, i, not docked)
 	end
 	C.SetSubordinateGroupDockAtCommander(inputobject, i, docked)
 	setReactiveDocking(inputobject, i, reactive)
