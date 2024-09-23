@@ -55,8 +55,6 @@ local function getDockingStartingOrder(inputobject, i)
 	local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
 	local checked = getReactiveDocking(inputobject, i)
 	local reactive = isReactive(inputobject, checked)
-	DebugError("checked: " .. tostring(checked))
-	DebugError("reactive: " .. tostring(reactive))
 	if not docked and reactive then
 		return "reactive"
 	elseif not docked then
