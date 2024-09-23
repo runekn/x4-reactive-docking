@@ -21,19 +21,19 @@
 			</actions>
 		</cue>
 		
-		
 		<cue name="Config" namespace="this">
 			<actions>
-				<set_value name="$default_carrier_reactive" exact="true" />
-				<set_value name="$default_noncarrier_reactive" exact="false" />
-				<set_value name="global.$rkn_rd" exact="this" />
+				<set_value name="$settings" exact="@player.entity.$RKN_ReactiveDockingSettings" />
+				<do_if value="$settings == null">
+					<set_value name="player.entity.$RKN_ReactiveDockingSettings" exact="table[$default_carrier_reactive = true, $default_noncarrier_reactive = false]" />
+				</do_if>
 			</actions>
 			<cue name="Config_GameLoaded">
 				<conditions>
 					<event_game_loaded />
 				</conditions>
 				<actions>
-					<set_value name="global.$rkn_rd" exact="this" />
+					
 					<reset_cue cue="this" />
 				</actions>
 			</cue>
@@ -58,13 +58,14 @@
 				<event_cue_signalled />
 			</conditions>
 			<actions>
+				<set_value name="$settings" exact="player.entity.$RKN_ReactiveDockingSettings" />
 				<signal_cue_instantly cue="md.Simple_Menu_API.Add_Row"/>
 				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 4}]" comment="Reactive as default for carriers"/>
 				<signal_cue_instantly
 					cue = "md.Simple_Menu_API.Make_CheckBox"
 					param = "table[
 						$id = 'default_carrier_reactive',
-						$checked = md.rkn_reactive_docking.Config.$default_carrier_reactive,
+						$checked = $settings.$default_carrier_reactive,
 						$col = 2,
 						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
 						$onClick = OnSMOCheckboxChange
@@ -75,7 +76,7 @@
 					cue = "md.Simple_Menu_API.Make_CheckBox"
 					param = "table[
 						$id = 'default_noncarrier_reactive',
-						$checked = md.rkn_reactive_docking.Config.$default_noncarrier_reactive,
+						$checked = $settings.$default_noncarrier_reactive,
 						$col = 2,
 						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
 						$onClick = OnSMOCheckboxChange
@@ -87,7 +88,7 @@
 				<event_cue_signalled />
 			</conditions>
 			<actions>
-				<set_value name="md.rkn_reactive_docking.Config.{'$' + event.param.$id}" exact="event.param.$checked" />
+				<set_value name="player.entity.$RKN_ReactiveDockingSettings.{'$' + event.param.$id}" exact="event.param.$checked" />
 				<cancel_cue cue = "this" />
 			</actions>
 		</cue>

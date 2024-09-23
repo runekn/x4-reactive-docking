@@ -18,9 +18,17 @@ local config = {
 	mapRowHeight = Helper.standardTextHeight
 }
 
-local function setReactiveDocking(inputobject, i, reactive)
+-- Returns whether reactive is on based on settings, dropdown selection, and shiptype.
+local function isReactive(inputobject, checked)
+	local playerID = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
+	local settings = GetNPCBlackboard(playerID, "$RKN_ReactiveDockingSettings")
 	local carrier = GetComponentData(inputobject, "shiptype") == "carrier"
-	reactive = (reactive and not carrier) or (not reactive and carrier)
+	local default = (settings.default_noncarrier_reactive == 1 and not carrier) or (settings.default_carrier_reactive == 1 and carrier)
+	return (checked and not default) or (not checked and default)
+end
+
+local function setReactiveDocking(inputobject, i, selectedReactive)
+	local reactive = isReactive(inputobject, selectedReactive)
 	local pilotentityid = GetControlEntity(inputobject)
 	local reactiveList = GetNPCBlackboard(pilotentityid, "$DockingReactive")
 	if reactiveList == nil then
@@ -44,10 +52,12 @@ local function getReactiveDocking(inputobject, i)
 end
 
 local function getDockingStartingOrder(inputobject, i)
-	local carrier = GetComponentData(inputobject, "shiptype") == "carrier"
 	local docked = C.ShouldSubordinateGroupDockAtCommander(inputobject, i)
-	local reactive = getReactiveDocking(inputobject, i)
-	if not docked and (reactive and not carrier) or (not reactive and carrier) then
+	local checked = getReactiveDocking(inputobject, i)
+	local reactive = isReactive(inputobject, checked)
+	DebugError("checked: " .. tostring(checked))
+	DebugError("reactive: " .. tostring(reactive))
+	if not docked and reactive then
 		return "reactive"
 	elseif not docked then
 		return "launched"
@@ -77,7 +87,7 @@ local function getDockingOptionsList(inputobject)
 		return config.subordinatedockingoptions
 	end
 end
- 
+
 function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu)
 	if (type(active) == 'function') then
 		active = active()
