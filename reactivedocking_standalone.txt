@@ -297,49 +297,53 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 				end
 			end
 
+			local groups = {}
 			local turretsizecounts = {}
 			local n = C.GetNumUpgradeGroups(inputobject, "")
 			local buf = ffi.new("UpgradeGroup2[?]", n)
 			n = C.GetUpgradeGroups2(buf, n, inputobject, "")
 			for i = 0, n - 1 do
 				if (ffi.string(buf[i].path) ~= "..") or (ffi.string(buf[i].group) ~= "") then
-					local group = { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group) }
-					local groupinfo = C.GetUpgradeGroupInfo2(inputobject, "", group.context, group.path, group.group, "turret")
-					if (groupinfo.count > 0) then
-						group.operational = groupinfo.operational
-						group.currentcomponent = groupinfo.currentcomponent
-						group.currentmacro = ffi.string(groupinfo.currentmacro)
-						group.slotsize = ffi.string(groupinfo.slotsize)
-						group.sizecount = 0
-						if (not hasmissileturrets) or (not hasnormalturrets) then
-							local ismissileturret = IsMacroClass(group.currentmacro, "missileturret")
-							hasmissileturrets = hasmissileturrets or ismissileturret
-							hasnormalturrets = hasnormalturrets or (not ismissileturret)
-							if ismissileturret then
-								if not hasoperationalmissileturrets then
-									hasoperationalmissileturrets = group.operational > 0
-								end
-							else
-								if not hasoperationalnormalturrets then
-									hasoperationalnormalturrets = group.operational > 0
-								end
+					table.insert(groups, { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group) })
+				end
+			end
+			table.sort(groups, function (a, b) return a.group < b.group end)
+			for _, group in ipairs(groups) do
+				local groupinfo = C.GetUpgradeGroupInfo2(inputobject, "", group.context, group.path, group.group, "turret")
+				if (groupinfo.count > 0) then
+					group.operational = groupinfo.operational
+					group.currentcomponent = groupinfo.currentcomponent
+					group.currentmacro = ffi.string(groupinfo.currentmacro)
+					group.slotsize = ffi.string(groupinfo.slotsize)
+					group.sizecount = 0
+					if (not hasmissileturrets) or (not hasnormalturrets) then
+						local ismissileturret = IsMacroClass(group.currentmacro, "missileturret")
+						hasmissileturrets = hasmissileturrets or ismissileturret
+						hasnormalturrets = hasnormalturrets or (not ismissileturret)
+						if ismissileturret then
+							if not hasoperationalmissileturrets then
+								hasoperationalmissileturrets = group.operational > 0
+							end
+						else
+							if not hasoperationalnormalturrets then
+								hasoperationalnormalturrets = group.operational > 0
 							end
 						end
-						if not GetComponentData(ConvertStringTo64Bit(tostring(group.currentcomponent)), "istugweapon") then
-							hasonlytugturrets = false
-						end
-
-						if group.slotsize ~= "" then
-							if turretsizecounts[group.slotsize] then
-								turretsizecounts[group.slotsize] = turretsizecounts[group.slotsize] + 1
-							else
-								turretsizecounts[group.slotsize] = 1
-							end
-							group.sizecount = turretsizecounts[group.slotsize]
-						end
-
-						table.insert(menu.turretgroups, group)
 					end
+					if not GetComponentData(ConvertStringTo64Bit(tostring(group.currentcomponent)), "istugweapon") then
+						hasonlytugturrets = false
+					end
+
+					if group.slotsize ~= "" then
+						if turretsizecounts[group.slotsize] then
+							turretsizecounts[group.slotsize] = turretsizecounts[group.slotsize] + 1
+						else
+							turretsizecounts[group.slotsize] = 1
+						end
+						group.sizecount = turretsizecounts[group.slotsize]
+					end
+
+					table.insert(menu.turretgroups, group)
 				end
 			end
 
@@ -467,7 +471,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					n = C.GetDroneModes(buf, n, inputobject, dronetype.id)
 					for i = 0, n - 1 do
 						local id = ffi.string(buf[i].id)
-						if (id ~= "trade") or (id == entry.current) then
+						if id ~= "trade" then
 							table.insert(entry.modes, { id = id, text = ffi.string(buf[i].name), icon = "", displayremoveoption = false })
 						end
 					end
@@ -516,7 +520,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 								mouseovertext = ReadText(1026, 3230)
 							end
 
-							row1[5]:setColSpan(9):createDropDown(entry.modes, { startOption = function () return ffi.string(C.GetCurrentDroneMode(inputobject, entry.type)) end, active = active, mouseOverText = mouseovertext })
+							row1[5]:setColSpan(9):createDropDown(entry.modes, { startOption = function () return menu.dropdownDroneStartOption(inputobject, entry.type) end, active = active, mouseOverText = mouseovertext })
 							row1[5].handlers.onDropDownConfirmed = function (_, newdronemode) C.SetDroneMode(inputobject, entry.type, newdronemode) end
 
 							row2[5]:setColSpan(9):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.IsDroneTypeArmed(inputobject, entry.type) and ReadText(1001, 8622) or ReadText(1001, 8623) end, { halign = "center" })
@@ -957,7 +961,21 @@ function do_menu.display()
 	local isdocked = (menu.currentplayership ~= 0) and GetComponentData(menu.currentplayership, "isdocked")
 	local ownericon, owner, shiptrader, isdock, canbuildships, isplayerowned, issupplyship, canhavetradeoffers, aipilot = GetComponentData(menu.currentcontainer, "ownericon", "owner", "shiptrader", "isdock", "canbuildships", "isplayerowned", "issupplyship", "canhavetradeoffers", "aipilot")
 	local cantrade = canhavetradeoffers and isdock
-	local canwareexchange = isplayerowned and ((not C.IsComponentClass(menu.currentcontainer, "ship")) or aipilot)
+
+	local isbuilderbusy = false
+	local numorders = C.GetNumOrders(menu.currentcontainer)
+	local currentorders = ffi.new("Order[?]", numorders)
+	numorders = C.GetOrders(currentorders, numorders, menu.currentcontainer)
+	for i = 1, numorders do
+		if ffi.string(currentorders[i - 1].orderdef) == "DeployToStation" then
+			if ffi.string(currentorders[i - 1].state) == "critical" then
+				isbuilderbusy = true
+				break
+			end
+		end
+	end
+	local canwareexchange = isplayerowned and ((not C.IsComponentClass(menu.currentcontainer, "ship")) or aipilot) and (not isbuilderbusy)
+
 	--NB: equipment docks currently do not have ship traders
 	local dockedplayerships = {}
 	Helper.ffiVLA(dockedplayerships, "UniverseID", C.GetNumDockedShips, C.GetDockedShips, menu.currentcontainer, "player")
@@ -973,6 +991,7 @@ function do_menu.display()
 	end
 	local canmodifyship = (shiptrader ~= nil) and (canequip or cansupply) and isdock
 	local canbuyship = (shiptrader ~= nil) and canbuildships and isdock
+	local istimelineshub = ffi.string(C.GetGameStartName()) == "x4ep1_gamestart_hub"
 	--print("cantrade: " .. tostring(cantrade) .. ", canbuyship: " .. tostring(canbuyship) .. ", canmodifyship: " .. tostring(canmodifyship))
 
 	width = (width / 3) - Helper.borderSize
@@ -1032,7 +1051,24 @@ function do_menu.display()
 
 	if menu.mode == "cockpit" then
 		local row = table_header:addRow("buttonRow1", { fixed = true })
-		row[1]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
+		-- cover button
+		local coverfaction = ""
+		if menu.currentplayership ~= 0 then
+			coverfaction = ffi.string(C.GetObjectCoverAbilityFaction(menu.currentplayership))
+		end
+		local currentcoverfaction = ffi.string(C.GetPlayerCoverFaction())
+		if coverfaction ~= "" then
+			local mouseovertext = ReadText(1026, 8611) .. ReadText(1001, 120) .. " " .. ColorText["licence"] .. GetFactionData(coverfaction, "name") .. "\27X"
+			local shortcut = GetLocalizedKeyName("action", 377)
+			if shortcut ~= "" then
+				mouseovertext = mouseovertext .. " (" .. shortcut .. ")"
+			end
+			row[1]:createButton({ mouseOverText = mouseovertext, helpOverlayID = "docked_cover", helpOverlayText = " ", helpOverlayHighlightOnly = true, uiTriggerID = "docked_cover" }):setText((currentcoverfaction == "") and ReadText(1001, 8640) or ReadText(1001, 8641), config.activeButtonTextProperties)	-- "Enable Cover"
+			row[1].handlers.onClick = function () return menu.buttonCover((currentcoverfaction == "") and coverfaction or "") end
+		else
+			row[1]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
+		end
+
 		local active = ((menu.currentplayership ~= 0) or menu.secondarycontrolpost) and C.CanPlayerStandUp()
 		row[2]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 277), helpOverlayID = "docked_getup", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1002, 20014), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Get Up"
 		if active then
@@ -1330,35 +1366,39 @@ function do_menu.display()
 			end
 
 			menu.turretgroups = {}
+			local groups = {}
 			local turretsizecounts = {}
 			local n = C.GetNumUpgradeGroups(menu.currentplayership, "")
 			local buf = ffi.new("UpgradeGroup2[?]", n)
 			n = C.GetUpgradeGroups2(buf, n, menu.currentplayership, "")
 			for i = 0, n - 1 do
 				if (ffi.string(buf[i].path) ~= "..") or (ffi.string(buf[i].group) ~= "") then
-					local group = { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group) }
-					local groupinfo = C.GetUpgradeGroupInfo2(menu.currentplayership, "", group.context, group.path, group.group, "turret")
-					if (groupinfo.count > 0) then
-						group.operational = groupinfo.operational
-						group.currentcomponent = groupinfo.currentcomponent
-						group.currentmacro = ffi.string(groupinfo.currentmacro)
-						group.slotsize = ffi.string(groupinfo.slotsize)
-						group.sizecount = 0
+					table.insert(groups, { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group) })
+				end
+			end
+			table.sort(groups, function (a, b) return a.group < b.group end)
+			for _, group in ipairs(groups) do
+				local groupinfo = C.GetUpgradeGroupInfo2(menu.currentplayership, "", group.context, group.path, group.group, "turret")
+				if (groupinfo.count > 0) then
+					group.operational = groupinfo.operational
+					group.currentcomponent = groupinfo.currentcomponent
+					group.currentmacro = ffi.string(groupinfo.currentmacro)
+					group.slotsize = ffi.string(groupinfo.slotsize)
+					group.sizecount = 0
 
-						if group.slotsize ~= "" then
-							if turretsizecounts[group.slotsize] then
-								turretsizecounts[group.slotsize] = turretsizecounts[group.slotsize] + 1
-							else
-								turretsizecounts[group.slotsize] = 1
-							end
-							group.sizecount = turretsizecounts[group.slotsize]
+					if group.slotsize ~= "" then
+						if turretsizecounts[group.slotsize] then
+							turretsizecounts[group.slotsize] = turretsizecounts[group.slotsize] + 1
+						else
+							turretsizecounts[group.slotsize] = 1
 						end
+						group.sizecount = turretsizecounts[group.slotsize]
+					end
 
-						table.insert(menu.turretgroups, group)
+					table.insert(menu.turretgroups, group)
 
-						if not GetComponentData(ConvertStringTo64Bit(tostring(group.currentcomponent)), "istugweapon") then
-							hasonlytugturrets = false
-						end
+					if not GetComponentData(ConvertStringTo64Bit(tostring(group.currentcomponent)), "istugweapon") then
+						hasonlytugturrets = false
 					end
 				end
 			end
@@ -1428,15 +1468,15 @@ function do_menu.display()
 					local entry = {
 						type = dronetype.id,
 						name = dronetype.name,
-						current = ffi.string(C.GetCurrentDroneMode(menu.currentplayership, dronetype.id)),
 						modes = {},
 					}
+
 					local n = C.GetNumDroneModes(menu.currentplayership, dronetype.id)
 					local buf = ffi.new("DroneModeInfo[?]", n)
 					n = C.GetDroneModes(buf, n, menu.currentplayership, dronetype.id)
 					for i = 0, n - 1 do
 						local id = ffi.string(buf[i].id)
-						if (id ~= "trade") or (id == entry.current) then
+						if id ~= "trade" then
 							table.insert(entry.modes, { id = id, text = ffi.string(buf[i].name), icon = "", displayremoveoption = false })
 						end
 					end
@@ -1458,7 +1498,7 @@ function do_menu.display()
 					local isblocked = C.IsDroneTypeBlocked(menu.currentplayership, entry.type)
 					local row = table_header:addRow("drone_config", {  })
 					row[1]:createText(function () return entry.name .. " (" .. (C.IsDroneTypeArmed(menu.currentplayership, entry.type) and (C.GetNumUnavailableUnits(menu.currentplayership, entry.type) .. "/") or "") .. C.GetNumStoredUnits(menu.currentplayership, entry.type, false) ..")" end, { color = isblocked and Color["text_warning"] or nil })
-					row[2]:setColSpan(5):createDropDown(entry.modes, { startOption = function () return ffi.string(C.GetCurrentDroneMode(menu.currentplayership, entry.type)) end, active = not isblocked })
+					row[2]:setColSpan(5):createDropDown(entry.modes, { startOption = function () return menu.dropdownDroneStartOption(menu.currentplayership, entry.type) end, active = not isblocked })
 					row[2].handlers.onDropDownConfirmed = function (_, newdronemode) C.SetDroneMode(menu.currentplayership, entry.type, newdronemode) end
 					row[7]:setColSpan(5):createButton({ active = not isblocked }):setText(function () return C.IsDroneTypeArmed(menu.currentplayership, entry.type) and ReadText(1001, 8622) or ReadText(1001, 8623) end, { halign = "center" })
 					row[7].handlers.onClick = function () return C.SetDroneTypeArmed(menu.currentplayership, entry.type, not C.IsDroneTypeArmed(menu.currentplayership, entry.type)) end
@@ -1597,7 +1637,7 @@ function do_menu.display()
 		local mouseovertext
 		if (not active) and isplayerowned then
 			if C.IsComponentClass(menu.currentcontainer, "ship") then
-				mouseovertext = ReadText(1026, 7830)
+				mouseovertext = isbuilderbusy and ReadText(1001, 7939) or ReadText(1026, 7830)
 			end
 		end
 		row[1]:createButton(active and { helpOverlayID = "docked_transferwares", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1001, 8618), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Transfer Wares"
@@ -1608,7 +1648,9 @@ function do_menu.display()
 		end
 		local active = (menu.currentplayership ~= 0) or menu.secondarycontrolpost
 		row[2]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 277), helpOverlayID = "docked_getup", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1002, 20014), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Get Up"
-		row[2].handlers.onClick = menu.buttonGetUp
+		if active then
+			row[2].handlers.onClick = menu.buttonGetUp
+		end
 		local active = menu.currentplayership ~= 0
 		row[7]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 316), helpOverlayID = "docked_shipinfo", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1001, 8602), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Ship Information"
 		if active then
@@ -1631,7 +1673,7 @@ function do_menu.display()
 		end
 
 		local hastradeoffers = GetFactionData(owner, "hastradeoffers")
-		local active = cantrade and hastradeoffers
+		local active = cantrade and hastradeoffers and (not istimelineshub)
 		local mouseovertext = ""
 		if not hastradeoffers then
 			mouseovertext = ReadText(1026, 7866)
@@ -1708,12 +1750,16 @@ function do_menu.display()
 				row[1].properties.uiTriggerID = "startmode"
 			end
 		end
-		if menu.currentplayership ~= 0 then
-			row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), bgColor = menu.undockButtonBGColor, highlightColor = menu.undockButtonHighlightColor, helpOverlayID = "docked_undock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1002, 20013), { halign = "center", color = menu.undockButtonTextColor })	-- "Undock"
-			row[2].handlers.onClick = menu.buttonUndock
+		if not istimelineshub then
+			if menu.currentplayership ~= 0 then
+				row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), bgColor = menu.undockButtonBGColor, highlightColor = menu.undockButtonHighlightColor, helpOverlayID = "docked_undock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1002, 20013), { halign = "center", color = menu.undockButtonTextColor })	-- "Undock"
+				row[2].handlers.onClick = menu.buttonUndock
+			else
+				row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), helpOverlayID = "docked_gotoship", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1001, 7305), { halign = "center" })	-- "Go to Ship"
+				row[2].handlers.onClick = menu.buttonGoToShip
+			end
 		else
-			row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), helpOverlayID = "docked_gotoship", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1001, 7305), { halign = "center" })	-- "Go to Ship"
-			row[2].handlers.onClick = menu.buttonGoToShip
+			row[2]:createButton(config.inactiveButtonProperties):setText(ReadText(1001, 7305), config.inactiveButtonTextProperties)	-- dummy
 		end
 		row[7]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
 
