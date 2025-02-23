@@ -1,12 +1,12 @@
 -- ffi setup 
-local ffi = require("ffi") 
-local C = ffi.C 
- 
-local Lib = require("extensions.sn_mod_support_apis.lua_library") 
-local RdLib = require("extensions.reactive_docking.reactivedocking") 
+local ffi = require("ffi")
+local C = ffi.C
+
 local map_menu = {}
 local dock_menu = {}
 local do_menu = {}
+
+RKN_ReactiveDocking_Standalone = {}
 
 local config = {
 	-- For setupLoadoutInfoSubmenuRows() --
@@ -38,11 +38,11 @@ local config = {
 	------------------
 }
 
-local function init()
-	map_menu = Lib.Get_Egosoft_Menu("MapMenu")
+function RKN_ReactiveDocking_Standalone.init()
+	map_menu = Helper.getMenu("MapMenu")
 	map_menu.setupLoadoutInfoSubmenuRows = do_menu.setupLoadoutInfoSubmenuRows
 	
-	dock_menu = Lib.Get_Egosoft_Menu("DockedMenu")
+	dock_menu = Helper.getMenu("DockedMenu")
 	dock_menu.display = do_menu.display
 end
 
@@ -642,7 +642,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							--row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 							--row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
 							-- With this
-							RdLib.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu)
+							RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu)
 							-- Runekn's Docking Options edits end here
 						end
 					end
@@ -1625,7 +1625,7 @@ function do_menu.display()
 						--row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext, helpOverlayID = "docked_subordinate_arm" .. subordinatecounter, helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 						--row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
 						-- With this
-						RdLib.addReactiveDockingDockMenu(row, menu.currentplayership, i, active, mouseovertext, dock_menu)
+						RKN_ReactiveDocking.addReactiveDockingDockMenu(row, menu.currentplayership, i, active, mouseovertext, dock_menu)
 						-- Runekn's Docking Options edits end here --
 					end
 				end
@@ -1785,5 +1785,3 @@ function do_menu.display()
 	-- display view/frame
 	menu.frame:display()
 end
-
-init()

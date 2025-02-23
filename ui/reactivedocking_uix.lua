@@ -1,31 +1,25 @@
--- ffi setup 
-local ffi = require("ffi") 
-local C = ffi.C 
- 
-local Lib = require("extensions.sn_mod_support_apis.lua_library") 
-local RdLib = require("extensions.reactive_docking.reactivedocking") 
 local map_menu = {}
 local dock_menu = {}
 local do_menu = {}
 
-local function init()
+RKN_ReactiveDocking_UIX = {}
+
+function RKN_ReactiveDocking_UIX.init()
 	DebugError("Reactive Docking UI Init")
 
-	map_menu = Lib.Get_Egosoft_Menu("MapMenu")
+	map_menu = Helper.getMenu("MapMenu")
 	map_menu.registerCallback("rd_addReactiveDockingMapMenu", do_menu.addReactiveDockingMapMenu)
 	
-	dock_menu = Lib.Get_Egosoft_Menu("DockedMenu")
+	dock_menu = Helper.getMenu("DockedMenu")
 	dock_menu.registerCallback("rd_addReactiveDockingDockMenu", do_menu.addReactiveDockingDockMenu)
 end
 
 function do_menu.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext)
-	RdLib.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu)
+	RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu)
 	return true
 end
 
 function do_menu.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext)
-	RdLib.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, dock_menu)
+	RKN_ReactiveDocking.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, dock_menu)
 	return true
-end 
-
-init()
+end

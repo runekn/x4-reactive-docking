@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon name="rkn_configio" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../ui/core/addon.xsd">
+  <environment type="menus">
+    <file name="ui/reactivedocking.lua" />
+    <file name="ui/reactivedocking_uix.lua" />
+    <file name="ui/reactivedocking_standalone.lua" />
+    <file name="ui/ui_initializer.lua" />
+    <dependency name="ego_detailmonitor" />
+    <dependency name="ego_detailmonitorhelper" />
+    <!--<savedvariable name="InfoCenter_Filters" storage="userdata" />-->
+  </environment>
+</addon>

@@ -1,9 +1,5 @@
--- ffi setup 
-local ffi = require("ffi") 
-local C = ffi.C 
- 
-local function init() 
-	DebugError("Reactive Docking: extension_check Init") 
+local function init()
+	DebugError("Reactive Docking: extension_check Init")
 	
 	local extensions = GetExtensionList()
 	local compat = false
@@ -17,12 +13,11 @@ local function init()
 		
 	if compat == true then
 		DebugError("Reactive Docking: Loading in High Compatibility Mode")
-		require('extensions.reactive_docking.reactivedocking_uix')
+		RKN_ReactiveDocking_UIX.init()
 	else
 		DebugError("Reactive Docking: Loading in Stand Alone Mode")
-		require('extensions.reactive_docking.reactivedocking_standalone')
-	end
-		
-end 
- 
+		RKN_ReactiveDocking_Standalone.init()
+	end	
+end
+
 init()

@@ -1,26 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mdscript name="rkn_reactive_docking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
 	<cues>
-		<cue name="OnLuaLoaderReady">
-			<conditions>
-				<event_ui_triggered screen="'Lua_Loader'" control="'Ready'" />
-			</conditions>
-			<actions>
-				<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.kuertee_ui_extensions.ui.kuertee_menu_map'"/>
-            	<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.kuertee_ui_extensions.ui.kuertee_menu_docked'"/>
-				<raise_lua_event name="'Lua_Loader.Load'" param="'extensions.reactive_docking.ui_initializer'"/>
-			</actions>
-		</cue>
-		<cue name="OnLuaLoaderReadyCompleted">
-			<conditions>
-				<event_cue_completed cue="OnLuaLoaderReady" />
-			</conditions>
-			<actions>
-				<reset_cue cue="OnLuaLoaderReady" />
-				<reset_cue cue="this" />
-			</actions>
-		</cue>
-		
 		<cue name="Config" namespace="this">
 			<actions>
 				<set_value name="$settings" exact="@player.entity.$RKN_ReactiveDockingSettings" />

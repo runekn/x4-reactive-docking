@@ -1,8 +1,8 @@
 -- ffi setup 
-local ffi = require("ffi") 
+local ffi = require("ffi")
 local C = ffi.C
 
-local L = {}
+RKN_ReactiveDocking = {}
 
 local config = {
 	subordinatedockingoptions = {
@@ -95,7 +95,7 @@ local function getDockingOptionsList(inputobject)
 	end
 end
 
-function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu)
+function RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu)
 	if (type(active) == 'function') then
 		active = active()
 	end
@@ -111,12 +111,10 @@ function L.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseove
 	end
 end
 
-function L.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, menu)
+function RKN_ReactiveDocking.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, menu)
 	if (type(active) == 'function') then
 		active = active()
 	end
 	row[7]:setColSpan(5):createDropDown(getDockingOptionsList(inputobject), { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(inputobject, i) end })
 	row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption) end
-end 
-
-return L
+end

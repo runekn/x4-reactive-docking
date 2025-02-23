@@ -48,6 +48,7 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 
 ## Updates
 
+* v2.3.2: Use new official UI file declaration to avoid requiring disabled UI protection mode
 * v2.3.1: Fix compatibility with 7.50
 * v2.3: Add options menu for default behavior of player ships. New docking behavior is now instantly applied when chosen from dropdown.
 * v2.2.1: Fixed docking menu
