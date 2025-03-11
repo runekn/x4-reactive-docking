@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<aiscript name="lib.reactive_docking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts.xsd">
+    <interrupts>
+        <library>
+            <actions name="IsReactiveDockingActive">
+                <set_value name="$group_index" exact="this.assignedcontrolled.subordinategroupid" />
+                <set_value name="$reactive_toggled" exact="@player.entity.$RKN_ReactiveOptions.{'$' + $commander.idcode}.{$group_index} != 0" />
+                <do_if value="this.ship.isplayerowned">
+                    <set_value name="$reactive_default_toggled" exact="@player.entity.$RKN_ReactiveDockingSettings.{$reactive_default_option}"/>
+                </do_if>
+                <do_else>
+                    <set_value name="$reactive_default_toggled" exact="@player.entity.$RKN_ReactiveDockingSettingsDefaults.{$reactive_default_option}"/>
+                </do_else>
+                <set_value name="$dockonly" exact="this.assignedcontrolled.subordinategroupdockoverride"/>
+                <set_value name="$reactive_active" exact="not $dockonly and (($reactive_toggled and not $reactive_default_toggled) or (not $reactive_toggled and $reactive_default_toggled))"/>
+
+                <debug_text text="'knownname: %1\n  dockonly: %2\n  reactive_default_option: %3\n  reactive_default_toggled: %4\n  reactive_toggled: %5\n  reactive_active: %6\n  commander_idcode: %7'.[this.assignedcontrolled.knownname + ' ' + this.assignedcontrolled.idcode, $dockonly, $reactive_default_option, $reactive_default_toggled, $reactive_toggled, $reactive_active, $commander.idcode]" chance="$debugchance" />
+
+                <remove_value name="$group_index" />
+                <remove_value name="$reactive_toggled" />
+                <remove_value name="$reactive_default_toggled" />
+            </actions>
+        </library>
+    </interrupts>
+</aiscript>

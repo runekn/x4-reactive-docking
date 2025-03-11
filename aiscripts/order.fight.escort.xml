@@ -1,27 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<diff>
+<diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
+
+	<add sel='(//aiscript/attention/actions//do_if[@value="$internalordercalled?"])[1]' pos="before">
+		<debug_text text="'internalordercalled wait'" chance="$debugchance" />
+	</add>
+	<add sel='(//set_value[@name="$newformationoffset" and @exact="$formationparam"])[1]' pos="before">
+		<debug_text text="'newformationoffset = formationparam'" chance="$debugchance" />
+	</add>
+	<add sel='(//do_if[@value="$target.zone.isclass.highway or this.zone.isclass.highway"])[1]' pos="before">
+		<debug_text text="'highway check'" chance="$debugchance" />
+	</add>
+	<add sel='(//do_if[@comment="Safety check in case the script is called from non-order script"])[1]' pos="before">
+		<debug_text text="'set_order_syncpoint_reached'" chance="$debugchance" />
+	</add>
+	<add sel='//do_while[@value="$target.isoperational and (($target.owner == faction.player) or $leaderpilot) and (this.assignedcontrolled.isformationwingman or ($iscarrierbased and @this.assignedcontrolled.dock.container == $target) or $target.dock or (((@$target.order.id == &apos;DockAndWait&apos;) or (@$target.order.id == &apos;DockAt&apos;)) and $target.hascontext.{$target.order.$destination.zone}))"]' pos="prepend">
+		<debug_text text="'main loop if'" chance="$debugchance" />
+	</add>
+	<add sel='(//wait)[12]' pos="before">
+		<debug_text text="'wait before'" chance="$debugchance" />
+	</add>
+	<add sel='(//set_value[@name="$enemy" and @exact="null"])[2]' pos="before">
+		<debug_text text="'wait actions'" chance="$debugchance" />
+	</add>
+	<add sel='(//wait)[12]' pos="after">
+		<debug_text text="'wait after'" chance="$debugchance" />
+	</add>
+	<add sel='(//label[@name="finish"])[1]' pos="after">
+		<debug_text text="'finish'" chance="$debugchance" />
+	</add>
+
+	<add sel="//aiscript//on_abort" pos="prepend">
+		<debug_text text="'abort'" chance="$debugchance" />
+    </add>
+
+	<add sel='(//create_order[@name="$locorder"])[2]' pos="before">
+		<debug_text text="'DockAndWait'" chance="$debugchance" />
+    </add>
+
+
 	<!--
 		Here we replace the $iscarrier assignment. We simply add another condition; if subordinate group is 'reactive' then true.
 	-->
 	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
-		<set_value name="$groupindex" exact="this.assignedcontrolled.subordinategroupid" />
-		<set_value name="$reactivedocking" exact="@$target.pilot.$DockingReactive.{$groupindex} != 0" /> <!-- Get option. This option will be 1 if we want noncarrier based as reactive, or 0 if we want carrier based as reactive -->
-		<set_value name="$iscarrierbasedactual" exact="((@$target.type == shiptype.carrier) or this.assignedcontrolled.subordinategroupdockoverride)"/> <!-- Check if this is an actual carrier -->
-		<set_value name="$iscarrierbasedfaked" exact="$iscarrierbasedactual"/>
-		<do_if value="this.ship.isplayerowned">
-			<set_value name="$settings" exact="@player.entity.$RKN_ReactiveDockingSettings" />
-			<set_value name="$iscarrierbasedfaked" exact="($settings.$default_noncarrier_reactive and not $iscarrierbasedactual) or ($settings.$default_carrier_reactive and $iscarrierbasedactual)"/>
-		</do_if>
-		<set_value name="$iscarrierbased" exact="(($reactivedocking and not $iscarrierbasedfaked) or (not $reactivedocking and $iscarrierbasedfaked) or this.assignedcontrolled.subordinategroupdockoverride) and not this.assignedcontrolled.iscapitalship"/> <!-- Set wanted docking behavior -->
 		<!--<do_if value="this.ship.isplayerowned">
-			<debug_text text="'knownname: ' + this.assignedcontrolled.knownname" chance="100" />
-			<debug_text text="'iscarrierbasedactual: ' + $iscarrierbasedactual" chance="100" />
-			<debug_text text="'default_carrier_reactive: ' + $settings.$default_carrier_reactive" chance="100" />
-			<debug_text text="'default_noncarrier_reactive: ' + $settings.$default_noncarrier_reactive" chance="100" />
-			<debug_text text="'iscarrierbasedfaked: ' + $iscarrierbasedfaked" chance="100" />
-			<debug_text text="'reactivedocking: ' + $reactivedocking" chance="100" />
-			<debug_text text="'iscarrierbased: ' + $iscarrierbased" chance="100" />
+			<set_value name="$debugchance" exact="100"/>
 		</do_if>-->
+
+		<!-- migrate pilot blackboard table to player blackboard -->
+		<do_if value="$target.pilot.$DockingReactive?">
+			<do_if value="not @player.entity.$RKN_ReactiveOptions.{'$' + $target.idcode}">
+				<debug_text text="'migrating reactive table to player blackboard %1 %2'.[$target.knownname, $target.idcode]" chance="$debugchance"/>
+				<set_value name="$reactivedockingOld" exact="@$target.pilot.$DockingReactive"/>
+				<do_if value="not player.entity.$RKN_ReactiveOptions?">
+					<set_value name="player.entity.$RKN_ReactiveOptions" exact="table[]" />
+				</do_if>
+				<set_value name="player.entity.$RKN_ReactiveOptions.{'$' + $target.idcode}" exact="$reactivedockingOld" />
+			</do_if>
+			<debug_text text="'deleting reactive table from pilot blackboard %1 %2'.[$target.knownname, $target.idcode]" chance="$debugchance"/>
+			<remove_value name="$target.pilot.$DockingReactive"/>
+		</do_if>
+
+		<do_if value="not this.assignedcontrolled.iscapitalship">
+			<do_if value="this.assignedcontrolled.subordinategroupdockoverride">
+				<set_value name="$iscarrierbased" exact="true" />
+			</do_if>
+			<do_else>
+				<do_if value="@$target.type == shiptype.carrier">
+					<set_value name="$reactive_default_option" exact="'$default_carrier_reactive'"/>
+				</do_if>
+				<do_else>
+					<set_value name="$reactive_default_option" exact="'$default_noncarrier_reactive'"/>
+				</do_else>
+				<set_value name="$commander" exact="$target" />
+				<include_interrupt_actions ref="IsReactiveDockingActive"/>
+				<set_value name="$iscarrierbased" exact="$reactive_active" />
+				<remove_value name="$reactive_default_option" />
+				<remove_value name="$reactive_active" />
+			</do_else>
+		</do_if>
+		<do_else>
+			<set_value name="$iscarrierbased" exact="false" />
+		</do_else>
+
 	</replace>
 </diff>

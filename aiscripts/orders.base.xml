@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
+
+    <add sel='//do_if[@value="$object.isclass.ship and ($object.dock or $object.parkedat) and ($object.order.id != &apos;Undock&apos;) and ($object.order.id != &apos;TransferWorkers&apos;)"]/do_else' pos="before">
+    
+        <!-- Prevent ProtectStation subordinates from auto undocking -->
+        <do_elseif value="(not $object.dock or (if $object.isunit then $object.dock.isunitdockingallowed else $object.dock.isdockingallowed)) and $object.order.id == 'ProtectStation'">
+            <do_if value="$object.dock">
+                <set_value name="$parkingcontainer" exact="$object.dock.container"/>
+            </do_if>
+            <do_elseif value="$object.parkedat">
+                <do_if value="$object.parkedat.container">
+                    <set_value name="$parkingcontainer" exact="$object.parkedat.container"/>
+                </do_if>
+                <do_else>
+                    <set_value name="$parkingcontainer" exact="$object.parkedat"/>
+                </do_else>
+            </do_elseif>
+
+            <do_if value="not $object.allcommanders.indexof.{$parkingcontainer} and $object.parkedat">
+                <set_value name="$undock"/>
+            </do_if>
+            <remove_value name="$parkingcontainer"/>
+        </do_elseif>
+
+        <!-- Prevent TradeRoutine resupplier subordinates from auto undocking -->
+        <do_elseif value="(not $object.dock or (if $object.isunit then $object.dock.isunitdockingallowed else $object.dock.isdockingallowed)) and $object.order.id == 'TradeRoutine' and @$object.commander.type == shiptype.resupplier">
+            <do_if value="$object.dock">
+                <set_value name="$parkingcontainer" exact="$object.dock.container"/>
+            </do_if>
+            <do_elseif value="$object.parkedat">
+                <do_if value="$object.parkedat.container">
+                    <set_value name="$parkingcontainer" exact="$object.parkedat.container"/>
+                </do_if>
+                <do_else>
+                    <set_value name="$parkingcontainer" exact="$object.parkedat"/>
+                </do_else>
+            </do_elseif>
+
+            <do_if value="this.ship.isplayerowned">
+                <debug_text text="'test1'" chance="100" />
+            </do_if>
+
+            <do_if value="not $object.allcommanders.indexof.{$parkingcontainer} and $object.parkedat">
+                <set_value name="$undock"/>
+            </do_if>
+
+            <do_if value="this.ship.isplayerowned">
+                <debug_text text="'test2'" chance="100" />
+            </do_if>
+
+			<set_value name="$commander" exact="$object.commander" />
+            <set_value name="$reactive_default_option" exact="'$default_resupply_reactive'"/>
+            <set_value name="$debugchance" exact="0" />
+            <do_if value="this.ship.isplayerowned">
+                <set_value name="$debugchance" exact="100" />
+            </do_if>
+            <include_interrupt_actions ref="IsReactiveDockingActive"/>
+            <do_if value="not $reactive_active">
+                <debug_text text="'undocking due to reactive being disabled'" chance="$debugchance"/>
+                <set_value name="$undock"/>
+            </do_if>
+            <remove_value name="$reactive_default_option" />
+            <remove_value name="$reactive_active" />
+            <remove_value name="$debugchance" />
+
+            <remove_value name="$parkingcontainer"/>
+        </do_elseif>
+    </add>
+</diff>

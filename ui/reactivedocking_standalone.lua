@@ -642,7 +642,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							--row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 							--row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
 							-- With this
-							RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu)
+							RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu, isdockingpossible)
 							-- Runekn's Docking Options edits end here
 						end
 					end
@@ -1625,7 +1625,7 @@ function do_menu.display()
 						--row[7]:setColSpan(5):createButton({ active = active, mouseOverText = mouseovertext, helpOverlayID = "docked_subordinate_arm" .. subordinatecounter, helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 						--row[7].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(menu.currentplayership, i, not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) end
 						-- With this
-						RKN_ReactiveDocking.addReactiveDockingDockMenu(row, menu.currentplayership, i, active, mouseovertext, dock_menu)
+						RKN_ReactiveDocking.addReactiveDockingDockMenu(row, menu.currentplayership, i, active, mouseovertext, dock_menu, isdockingpossible)
 						-- Runekn's Docking Options edits end here --
 					end
 				end

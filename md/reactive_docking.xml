@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mdscript name="rkn_reactive_docking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+<mdscript name="RKN_REACTIVE_DOCKING" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
 	<cues>
 		<cue name="Config" namespace="this">
 			<actions>
+				<set_value name="$defaults" exact="@player.entity.$RKN_ReactiveDockingSettingsDefaults" />
+				<do_if value="$defaults == null">
+					<set_value name="player.entity.$RKN_ReactiveDockingSettingsDefaults" exact="table[$default_carrier_reactive = true, $default_noncarrier_reactive = false, $default_resupply_reactive = false, $default_station_reactive = false]" />
+				</do_if>
 				<set_value name="$settings" exact="@player.entity.$RKN_ReactiveDockingSettings" />
 				<do_if value="$settings == null">
-					<set_value name="player.entity.$RKN_ReactiveDockingSettings" exact="table[$default_carrier_reactive = true, $default_noncarrier_reactive = false]" />
+					<set_value name="player.entity.$RKN_ReactiveDockingSettings" exact="table[$default_carrier_reactive = true, $default_noncarrier_reactive = false, $default_resupply_reactive = false, $default_station_reactive = false]" />
 				</do_if>
 			</actions>
-			<cue name="Config_GameLoaded">
-				<conditions>
-					<event_game_loaded />
-				</conditions>
-				<actions>
-					
-					<reset_cue cue="this" />
-				</actions>
-			</cue>
+			<cues>
+				<cue name="Config_GameLoaded">
+					<conditions>
+						<event_game_loaded />
+					</conditions>
+					<actions>
+						
+						<reset_cue cue="this" />
+					</actions>
+				</cue>
+			</cues>
 		</cue>
 		<cue name="StartSMO" instantiate="true">
 			<conditions>
@@ -57,6 +63,28 @@
 					param = "table[
 						$id = 'default_noncarrier_reactive',
 						$checked = $settings.$default_noncarrier_reactive,
+						$col = 2,
+						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
+						$onClick = OnSMOCheckboxChange
+					]"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Add_Row"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 6}]" comment="Reactive as default for stations"/>
+				<signal_cue_instantly
+					cue = "md.Simple_Menu_API.Make_CheckBox"
+					param = "table[
+						$id = 'default_station_reactive',
+						$checked = $settings.$default_station_reactive,
+						$col = 2,
+						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
+						$onClick = OnSMOCheckboxChange
+					]"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Add_Row"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 7}]" comment="Reactive as default for resupply auxiliaries"/>
+				<signal_cue_instantly
+					cue = "md.Simple_Menu_API.Make_CheckBox"
+					param = "table[
+						$id = 'default_resupply_reactive',
+						$checked = $settings.$default_resupply_reactive,
 						$col = 2,
 						$width = 'Helper.standardButtonHeight', $height = 'Helper.standardButtonHeight',
 						$onClick = OnSMOCheckboxChange

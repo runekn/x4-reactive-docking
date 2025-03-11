@@ -48,6 +48,7 @@ To work with Subsystem Targeting Orders at least version 3.3 and of STO, and 1.1
 
 ## Updates
 
+* v3.0.0: Support for station defend subordinates. Support for auxiliary trade subordinates. Docking settings are now tied to the ship, rather than the pilot. Removed japanese translations, since they are outdated.
 * v2.3.3: Fix Reactive docking preventing Expanded Configuration Loader from working
 * v2.3.2: Use new official UI file declaration to avoid requiring disabled UI protection mode
 * v2.3.1: Fix compatibility with 7.50

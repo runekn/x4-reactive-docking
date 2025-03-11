@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
+    <add sel="//params">
+        <param name="cannotdock" type="internal" default="false" text="{1041, 10133}" comment="Unable to dock. used for error handling in case of inability to dock"/>
+    </add>
+
+    <add sel="//aiscript/init">
+        <do_if value="this.ship.isplayerowned">
+			<set_value name="$debugchance" exact="100"/>
+		</do_if>
+
+        <set_value name="$dockonly" exact="this.assignedcontrolled.subordinategroupdockoverride"/>
+        <do_if value="not $dockonly">
+			<set_value name="$commander" exact="$station" />
+			<set_value name="$reactive_default_option" exact="'$default_station_reactive'" />
+            <include_interrupt_actions ref="IsReactiveDockingActive"/>
+            <remove_value name="$reactive_default_option" />
+		</do_if>
+        <do_else>
+            <set_value name="$reactive_active" exact="false" />
+        </do_else>
+
+        <do_if value="$reactive_active and $station.isoperational">
+            <find_dockingbay name="$locdock" object="$station">
+                <match_dock size="this.assignedcontrolled.docksize" storage="false"/>
+            </find_dockingbay>
+            <do_if value="not @$locdock.isoperational">
+                <set_value name="$reactive_active" exact="false"/>
+            </do_if>
+            <remove_value name="$locdock"/>
+        </do_if>
+    </add>
+
+    <add sel="//aiscript">
+        <on_abort>
+            <stop_moving object="this.ship" immediate="false" />
+            <cease_fire object="this.ship" />
+            <leave_formation object="this.ship" />
+            <do_if value="@this.assignedcontrolled.defaultorder.id == 'ProtectStation'">
+                <!-- reset $cannotdock so we try to dock the next time we restart the escort order. only necessary if this is the default order. -->
+                <edit_order_param order="this.assignedcontrolled.defaultorder" param="'cannotdock'" value="false"/>
+            </do_if>
+        </on_abort>
+    </add>
+
+    <add sel='//aiscript/attention/actions/do_if[@value="this.zone != $station.zone"]' pos="after">
+        <set_order_syncpoint_reached order="this.ship.order" />
+        <do_if value="($reactive_active or $dockonly) and @this.ship.dock.container != $station">
+            <!-- Try to dock at carrier -->
+            <do_if value="not $cannotdock">
+                <do_if value="$reactive_active">
+                    <find_dockingbay object="$station" name="$dock">
+                        <match_dock size="this.ship.docksize" trading="false" building="false" allowplayeronly="false" ventureplatform="null" ventureronly="false" storage="false"/>
+                        <match_relation_to object="this.ship" comparison="not" relation="enemy"/>
+                    </find_dockingbay>
+                    <set_value name="$distance" exact="this.ship.distanceto.{$dock}"/>
+                    <debug_text text="'distance to dock: ' + $distance" chance="$debugchance" />
+                    <do_if value="$dock != null and $distance ge 8000">
+                        <debug_text text="'moving towards dock while seeking enemies'" chance="$debugchance" />
+
+                        <!-- Get a safe position close to dock -->
+                        <!-- Stole this from fight.attack.object.fighter which has a comment that says it doesn't work always. Works great in testing though. -->
+                        <set_value name="$tempdist" min="3000" max="5000"/>
+                        <set_value name="$tempproportion" exact="$tempdist / $distance"/>
+                        <create_position name="$myrelpos" space="$dock" object="this.ship"/>
+                        <create_position name="$tempoffset" space="$dock" x="$myrelpos.x * $tempproportion" y="$myrelpos.y * $tempproportion" z="$myrelpos.z * $tempproportion" object="$dock"/>
+                        <get_safe_pos result="$pos" sector="$dock.sector" value="$tempoffset" object="$dock" radius="this.ship.size / 2.0" ignored="this.ship"/>
+                        <create_position name="$pos" space="$dock" value="$pos" object="$dock.sector"/>
+                        <remove_value name="$tempoffset"/>
+                        <remove_value name="$tempoffsetcomponent"/>
+                        <remove_value name="$myrelpos"/>
+                        <remove_value name="$tempdist"/>
+
+                        <set_value name="$internalordercalled"/>
+                        <run_script name="'move.seekenemies'" >
+                            <param name="destination" value="$dock" />
+                            <param name="pos" value="$pos" />
+                            <param name="escort" value="$station" />
+                            <param name="pursuedistance" value="$radius"/>
+                            <param name="radius" value="$radius"/>
+                            <param name="radiusanchorpos" value="$radiusanchorpos"/>
+                            <param name="radiusanchorspace" value="$radiusanchorspace"/>
+                            <param name="internalorder" value="true"/>
+                            <param name="travel" value="true"/>
+                            <param name="debugchance" value="$debugchance" />
+                        </run_script>
+                        <wait exact="500ms" />
+                    </do_if>
+                </do_if>
+                <debug_text text="'docking at station'" chance="$debugchance"/>
+                <leave_formation object="this.ship"/>
+                <set_value name="$internalordercalled"/>
+                <create_order object="this.ship" id="'DockAt'" immediate="true">
+                    <param name="destination" value="$station"/>
+                    <param name="dockfollowers" value="true"/>
+                    <param name="internalorder" value="true"/>
+                    <param name="callerid" value="this.ship.order"/>
+                    <param name="debugchance" value="$debugchance"/>
+                </create_order>
+            </do_if>
+            <do_else>
+                <!-- reset $cannotdock in case we can in the future. important here since this can be a default order. -->
+                <set_value name="$cannotdock" exact="false"/>
+            </do_else>
+            <do_if value="this.ship.dock">
+                <debug_text text="'undock. just because'" chance="$debugchance" />
+                <set_value name="$internalordercalled"/>
+                <create_order object="this.ship" id="'Undock'" immediate="true"/>
+            </do_if>
+        </do_if>
+        <!-- Docked but not carriers based. Start undock. -->
+        <do_elseif value="not $reactive_active and not $dockonly and this.ship.dock">
+            <debug_text text="'not carrierbased. undock'" chance="$debugchance" />
+            <set_value name="$internalordercalled"/>
+            <create_order object="this.ship" id="'Undock'" immediate="true"/>
+        </do_elseif>
+
+        <do_if value="$internalordercalled?">
+            <set_value name="$retaininescortgroup"/>
+            <!-- short wait to prevent further action before created orders can run. -->
+            <debug_text text="'wait internalordercalled'" chance="$debugchance" />
+            <wait exact="1s"/>
+        </do_if>
+    </add>
+    
+    <add sel='//do_while[@value="$station.zone.exists"]' pos="before">
+        <do_if value="not $reactive_active and not $dockonly">
+            <resume label="launched"/>
+        </do_if>
+        <do_while value="$station.zone.exists">
+
+            <do_if value="$timeout and (player.age ge $inittime + $timeout)">
+                <resume label="finish" />
+            </do_if>
+
+            <wait time="30s">
+                <interrupt>
+                    <conditions>
+                        <check_any>
+                            <!-- Check for station status change -->
+                            <event_object_destroyed object="$station" />
+                            <event_object_abandoned object="$station" />
+                            <check_all>
+                                <!-- remember that this event is fired AFTER ownership is changed. so ownership checks apply to the new owner. -->
+                                <event_object_changed_true_owner object="$station"/>
+                                <check_value value="event.param != this.ship.trueowner"/>
+                            </check_all>
+                            <!-- Check for enemies within radius in reactive mode -->
+                            <check_all>
+                                <event_gravidar_has_scanned object="this.assignedcontrolled"/>
+                                <check_value value="$reactive_active" />
+                                <check_value value="this.sector" comment="should already be covered by condition above, but just to be safe."/>
+                                <check_value value="player.age gt 20s"/>
+                                <check_value value="$radius and $radiusanchorspace and $radiusanchorpos"/>
+                                <count_gravidar_contacts result="$detected" object="this.ship" class="[class.ship_s, class.ship_m, class.ship_l, class.ship_xl, class.station]" checkoperational="false" docked="false" masstraffic="false" maybeattackedby="this.assignedcontrolled" min="1">
+                                    <match_context macro="this.sector.macro"/>
+                                    <match_context class="class.highway" negate="true"/>
+                                    <match class="class.buildstorage" negate="true"/>
+                                    <match state="componentstate.wreck" negate="true"/>
+                                    <match_distance value="$radiusanchorpos" space="$radiusanchorspace" max="$radius"/>
+                                </count_gravidar_contacts>
+                            </check_all>
+                        </check_any>
+                    </conditions>
+                </interrupt>
+            </wait>
+
+            <!-- Select the best target. With primary and secondary targets null, plus allowothertargets, it will acquire more targets -->
+            <do_if value="$reactive_active">
+                <run_script name="'lib.target.selection'">
+                    <param name="primarytarget" value="null" />
+                    <param name="secondarytargets" value="null" />
+                    <param name="escort" value="$station" />
+                    <param name="pursuedistance" value="$radius" />
+                    <param name="pursuetargets" value="false" />
+                    <param name="allowothertargets" value="true" />
+                    <param name="checkrelation" value="true"/>
+                    <param name="targetclasses" value="[class.ship_s, class.ship_m, class.ship_l, class.ship_xl, class.station]"/>
+                    <param name="debugchance" value="$debugchance"/>
+                    <!-- The selected target as return value -->
+                    <save_retval name="target" variable="$enemy" />
+                </run_script>
+
+                <!-- a prefered enemy -->
+                <do_if value="$enemy.canbeattacked">
+                    <!-- found something about to engage, "Enemy Spotted" -->
+                    <do_if value="this.assignedcontrolled.commander and @$enemy.pilot">
+                        <do_if value="($enemy.pilot.owner == @faction.loanshark)
+                                    or ($enemy.pilot.owner == @faction.yaki)
+                                    or ($enemy.pilot.owner == @faction.fallensplit)
+                                    or ($enemy.pilot.owner == faction.buccaneers)
+                                    or ($enemy.pilot.owner == faction.scaleplate)">
+                            <signal_objects object="player.entity" param="'npc_usecase'" chance="if @global.$SuppressCommChatter then 0 else 100" param2="table[ $name = '$Combat_Escort_Spotted_Pirate', $actors = table[ $Spotter = this, $Leader = this.assignedcontrolled.commanderentity, $Enemy = $enemy.pilot] ]"/>
+                        </do_if>
+                        <do_else>
+                            <signal_objects object="player.entity" param="'npc_usecase'" chance="if @global.$SuppressCommChatter then 0 else 100" param2="table[ $name = '$Combat_Escort_Spotted_Hostile', $actors = table[ $Spotter = this, $Leader = this.assignedcontrolled.commanderentity, $Enemy = $enemy.pilot] ]"/>
+                        </do_else>
+                    </do_if>
+
+                    <debug_text text="'%s %s %s attacking %s %s %s'.[this.assignedcontrolled.idcode, this.assignedcontrolled.knownname, this.assignedcontrolled, @$enemy.idcode, $enemy.knownname, $enemy]" chance="$debugchance"/>
+                    <!-- changed this call to an immediate order to:
+                        keep ships getting distracted by later attacks when already attacking
+                        while at the same time maintaining the ability to respond to attacks when seeking enemies.
+
+                        NB: this script will end as long as there are no blocking actions between this call and the end of the script. -->
+                    <create_order id="'Attack'" object="this.ship" immediate="true">
+                        <param name="primarytarget" value="$enemy"/>
+                        <param name="escort" value="$station" />
+                        <param name="pursuedistance" value="$radius" />
+                        <param name="allowothertargets" value="true"/>
+                        <param name="targetclasses" value="[class.ship_s, class.ship_m, class.ship_l, class.ship_xl, class.station]"/>
+                        <param name="disable" value="false"/>
+                        <param name="radius" value="$radius"/>
+                        <param name="radiusanchorpos" value="$radiusanchorpos"/>
+                        <param name="radiusanchorspace" value="$radiusanchorspace"/>
+                        <param name="internalorder" value="true"/>
+                        <param name="checkrelation" value="true"/>
+                        <param name="enforceradius" value="this.isplayerowned"/>
+                        <param name="debugchance" value="$debugchance" />
+                    </create_order>
+                </do_if>
+                <do_else>
+                    <debug_text text="'No target was found via lib.target.selection'" chance="$debugchance"/>
+                </do_else>
+            </do_if>
+
+            <do_if value="player.age gt @$next_resupply_check" chance="30">
+                <debug_text text="'%1 (%2) ready to resupply.'.[this.ship.knownname, this.ship]" chance="$debugchance"/>
+                <signal_objects object="this.ship" param="'resupply'" param2="[false]" param3="$debugchance" comment="param2 = [urgent?, resupplystationID], param3 = $debugchance"/>
+                <set_value name="$next_resupply_check" exact="player.age + 30min"/>
+            </do_if>
+
+            <wait exact="500ms" />
+        </do_while>
+        <resume label="finish"/>
+        <label name="launched"/>
+    </add>
+</diff>
