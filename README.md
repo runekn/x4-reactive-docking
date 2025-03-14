@@ -11,28 +11,28 @@ Most other subordinate groups just have the options to always be launched, alway
 ### Docking behavior options
 You can change the default option for any of these cases in the Extension Options (requires SirNuke's Mod Support API). **It is recommended this is only done once at the start of the game, as changing the default options will flip all reactive/launched docking options**.
 
-**Non-carrier escort wing**
+#### Non-carrier escort wing
 Example: Fighter assigned to intercepting for Colossus XL carrier.
 
 1. Docked: Same behavior as vanilla. Subordinates will remain docked.
 2. Launched (default): Same as vanilla. Subordinates will remain launched, and only dock if leader wants to travel far distances.
 3. Reactive: Subordinates will dock, but launch if something happens that is relevant to their standing order.
 
-**Carrier escort wing**
+#### Carrier escort wing
 Example: Fighter assigned to attacking with Behemoth L destroyer.
 
 1. Docked: Same behavior as vanilla. Subordinates will remain docked.
 2. Launched: Subordinates will remain launched, and only dock if leader wants to travel far distances.
 3. Reactive (default): Same as vanilla launched. Subordinates will dock, but launch if something happens that is relevant to their standing order.
 
-**Station defence wing**
+#### Station defence wing
 Example: Fighter assigned to defence of player HQ station.
 
 1. Docked: Subordinates will remain docked.
 2. Launched (default): Same as vanilla. Subordinates will patrol around the station in a random pattern, and engage any enemy entering the zone of control.
 3. Reactive: When no enemies are detected, ships will move towards avaliable docking pads while keeping a lookout. If within 8km of docking pads they will initiate dock. Will launch and attack if enemies enter the zone of control. Also works with capital ships.
 
-**Auxiliary trader**
+#### Auxiliary trader
 Example: Courier Vanguard assigned to trade for Nomad.
 
 1. Docked: Option not available.
