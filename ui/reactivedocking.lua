@@ -123,7 +123,7 @@ local function getDockingOptionsList(inputobject, assignment)
 	end
 end
 
-function RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu, isstation, isdockingpossible)
+local function isDropdownActive(active, mouseovertext, menu, inputobject, i, isstation, isdockingpossible)
 	if (type(active) == 'function') then
 		active = active()
 	end
@@ -139,27 +139,18 @@ function RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode
 			mouseovertext = ReadText(1026, 8605)
 		end
 	end
+	return active, mouseovertext
+end
+
+function RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, menu, isstation, isdockingpossible)
+	active, mouseovertext = isDropdownActive(active, mouseovertext, menu, inputobject, i, isstation, isdockingpossible)
 	row[3]:setColSpan(11):createDropDown(getDockingOptionsList(inputobject, menu.subordinategroups[i].assignment), { active = active, mouseOverText = mouseovertext, height = config.mapRowHeight, startOption = function () return getDockingStartingOrder(inputobject, i, isstation) end })
 	row[3].handlers.onDropDownActivated = function () menu.noupdate = true end
 	row[3].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption); menu.noupdate = false end
 end
 
 function RKN_ReactiveDocking.addReactiveDockingDockMenu(row, inputobject, i, active, mouseovertext, menu, isdockingpossible)
-	if (type(active) == 'function') then
-		active = active()
-	end
-	-- Reevaluate 'active', since vanilla just sets it false for any station and resupplier.
-	menu.updateSubordinateGroupInfo(inputobject)
-	if menu.subordinategroups[i] and menu.subordinategroups[i].assignment == "trade" then
-		active = true
-		if not GetComponentData(inputobject, "hasshipdockingbays") then
-			active = false
-			mouseovertext = ReadText(1026, 8604)
-		elseif not isdockingpossible then
-			active = false
-			mouseovertext = ReadText(1026, 8605)
-		end
-	end
+	active, mouseovertext = isDropdownActive(active, mouseovertext, menu, inputobject, i, false, isdockingpossible)
 	row[7]:setColSpan(5):createDropDown(getDockingOptionsList(inputobject, menu.subordinategroups[i].assignment), { active = active, mouseOverText = mouseovertext, startOption = function () return getDockingStartingOrder(inputobject, i) end })
 	row[7].handlers.onDropDownConfirmed = function (_, newdockingoption) setDockingOptions(inputobject, i, newdockingoption) end
 end
