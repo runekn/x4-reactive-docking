@@ -9,7 +9,7 @@
     </add>
 
     <add sel='//aiscript/attention/actions/run_script[@name="&apos;move.idle&apos;"]' pos="before">
-        <do_if value="$reactive_active">
+        <do_if value="$reactive_active?">
             <do_if value="@this.ship.dock.container != this.assignedcontrolled.commander">
                 <debug_text text="'docking at resupply ship'" chance="$debugchance" />
                 <create_order object="this.ship" id="'DockAt'" immediate="true">
