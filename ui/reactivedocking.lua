@@ -128,6 +128,7 @@ function RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode
 		active = active()
 	end
 	-- Reevaluate 'active', since vanilla just sets it false for any station and resupplier.
+	menu.updateSubordinateGroupInfo(inputobject)
 	if isstation or (menu.subordinategroups[i] and menu.subordinategroups[i].assignment == "trade") then
 		active = true
 		if not GetComponentData(inputobject, "hasshipdockingbays") then
@@ -148,9 +149,9 @@ function RKN_ReactiveDocking.addReactiveDockingDockMenu(row, inputobject, i, act
 		active = active()
 	end
 	-- Reevaluate 'active', since vanilla just sets it false for any station and resupplier.
+	menu.updateSubordinateGroupInfo(inputobject)
 	if menu.subordinategroups[i] and menu.subordinategroups[i].assignment == "trade" then
 		active = true
-		DebugError()
 		if not GetComponentData(inputobject, "hasshipdockingbays") then
 			active = false
 			mouseovertext = ReadText(1026, 8604)

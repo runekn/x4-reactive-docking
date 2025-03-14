@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
-    <add sel="//init" pos="prepend">
+    <add sel="//aiscript/init" pos="prepend">
         <set_value name="$commander" exact="this.assignedcontrolled.commander" />
         <set_value name="$reactive_default_option" exact="'$default_resupply_reactive'"/>
         <include_interrupt_actions ref="IsReactiveDockingActive"/>
         <remove_value name="$reactive_default_option" />
     </add>
 
-    <add sel='//actions/run_script[@name="&apos;move.idle&apos;"]' pos="before">
+    <add sel='//aiscript/attention/actions/run_script[@name="&apos;move.idle&apos;"]' pos="before">
         <do_if value="$reactive_active">
             <do_if value="@this.ship.dock.container != this.assignedcontrolled.commander">
                 <debug_text text="'docking at resupply ship'" chance="$debugchance" />

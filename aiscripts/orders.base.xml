@@ -2,7 +2,7 @@
 
 <diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
 
-    <add sel='//do_if[@value="$object.isclass.ship and ($object.dock or $object.parkedat) and ($object.order.id != &apos;Undock&apos;) and ($object.order.id != &apos;TransferWorkers&apos;)"]/do_else' pos="before">
+    <add sel='//aiscript/attention/actions/do_if[@value="$object.isclass.ship and ($object.dock or $object.parkedat) and ($object.order.id != &apos;Undock&apos;) and ($object.order.id != &apos;TransferWorkers&apos;)"]/do_else' pos="before">
     
         <!-- Prevent ProtectStation subordinates from auto undocking -->
         <do_elseif value="(not $object.dock or (if $object.isunit then $object.dock.isunitdockingallowed else $object.dock.isdockingallowed)) and $object.order.id == 'ProtectStation'">

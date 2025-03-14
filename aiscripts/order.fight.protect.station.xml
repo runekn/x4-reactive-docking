@@ -3,9 +3,12 @@
 <diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
     <add sel="//params">
         <param name="cannotdock" type="internal" default="false" text="{1041, 10133}" comment="Unable to dock. used for error handling in case of inability to dock"/>
+        <param name="subordinateorders" type="internal" default="[]" comment="Subordinate orders. subordinate dock orders to cancel. Defined in order.dock or order.dock.wait."/>
     </add>
 
     <add sel="//aiscript/init">
+        <set_value name="$subordinateorders" exact="[]"/>
+
         <do_if value="this.ship.isplayerowned">
 			<set_value name="$debugchance" exact="100"/>
 		</do_if>
@@ -37,11 +40,37 @@
             <stop_moving object="this.ship" immediate="false" />
             <cease_fire object="this.ship" />
             <leave_formation object="this.ship" />
+            <!-- order.fight.escort just refers to plain $subordinateorders, but that for some reason does not work for me even though it should be in defaultorder. So instead I specify this.assignedcontrolled.defaultorder.$subordinateorders -->
+            <do_if value="@this.assignedcontrolled.defaultorder.$subordinateorders.count and @this.assignedcontrolled.order.id != 'ProtectStation'">
+                <do_all exact="$this.assignedcontrolled.defaultorder.subordinateorders.count" counter="$i">
+                    <do_if value="this.assignedcontrolled.defaultorder.$subordinateorders.{$i}.exists">
+                    <debug_text text="'ON_ABORT: cancelling subordinate order to dock: %s'.[$this.assignedcontrolled.defaultorder.subordinateorders.{$i}]" chance="$debugchance"/>
+                    <cancel_order order="$this.assignedcontrolled.defaultorder.subordinateorders.{$i}"/>
+                    </do_if>
+                </do_all>
+                <do_if value="@this.assignedcontrolled.defaultorder.id == 'ProtectStation'">
+                    <edit_order_param order="this.assignedcontrolled.defaultorder" param="'subordinateorders'" value="[]"/>
+                    <debug_text text="'clearing subordinateorders to dock. subordinateorders: %s, defaultorder param: %s'.[$subordinateorders, this.assignedcontrolled.defaultorder.$subordinateorders]" chance="$debugchance"/>
+                </do_if>
+            </do_if>
             <do_if value="@this.assignedcontrolled.defaultorder.id == 'ProtectStation'">
                 <!-- reset $cannotdock so we try to dock the next time we restart the escort order. only necessary if this is the default order. -->
                 <edit_order_param order="this.assignedcontrolled.defaultorder" param="'cannotdock'" value="false"/>
             </do_if>
         </on_abort>
+    </add>
+
+    <add sel="//aiscript/interrupts">
+        <handler comment="commander signalled to append a subordinateorder. used when commander is already docked at commanders commander when subordinate joins.">
+            <conditions>
+                <!-- param2 == single order -->
+                <event_object_signalled object="this.assignedcontrolled" param="'add_subordinateorder'"/>
+                <check_value value="event.param2.exists"/>
+            </conditions>
+            <actions>
+                <append_to_list name="$subordinateorders" exact="event.param2"/>
+            </actions>
+        </handler>
     </add>
 
     <add sel='//aiscript/attention/actions/do_if[@value="this.zone != $station.zone"]' pos="after">
@@ -95,7 +124,7 @@
                     <param name="destination" value="$station"/>
                     <param name="dockfollowers" value="true"/>
                     <param name="internalorder" value="true"/>
-                    <param name="callerid" value="this.ship.order"/>
+                    <param name="callerid" value="this.ship.defaultorder"/>
                     <param name="debugchance" value="$debugchance"/>
                 </create_order>
             </do_if>
@@ -124,7 +153,7 @@
         </do_if>
     </add>
     
-    <add sel='//do_while[@value="$station.zone.exists"]' pos="before">
+    <add sel='//aiscript/attention/actions/do_while[@value="$station.zone.exists"]' pos="before">
         <do_if value="not $reactive_active and not $dockonly">
             <resume label="launched"/>
         </do_if>

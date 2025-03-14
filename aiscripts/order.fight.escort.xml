@@ -2,86 +2,175 @@
 
 <diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
 
-	<add sel='(//aiscript/attention/actions//do_if[@value="$internalordercalled?"])[1]' pos="before">
-		<debug_text text="'internalordercalled wait'" chance="$debugchance" />
-	</add>
-	<add sel='(//set_value[@name="$newformationoffset" and @exact="$formationparam"])[1]' pos="before">
-		<debug_text text="'newformationoffset = formationparam'" chance="$debugchance" />
-	</add>
-	<add sel='(//do_if[@value="$target.zone.isclass.highway or this.zone.isclass.highway"])[1]' pos="before">
-		<debug_text text="'highway check'" chance="$debugchance" />
-	</add>
-	<add sel='(//do_if[@comment="Safety check in case the script is called from non-order script"])[1]' pos="before">
-		<debug_text text="'set_order_syncpoint_reached'" chance="$debugchance" />
-	</add>
-	<add sel='//do_while[@value="$target.isoperational and (($target.owner == faction.player) or $leaderpilot) and (this.assignedcontrolled.isformationwingman or ($iscarrierbased and @this.assignedcontrolled.dock.container == $target) or $target.dock or (((@$target.order.id == &apos;DockAndWait&apos;) or (@$target.order.id == &apos;DockAt&apos;)) and $target.hascontext.{$target.order.$destination.zone}))"]' pos="prepend">
-		<debug_text text="'main loop if'" chance="$debugchance" />
-	</add>
-	<add sel='(//wait)[12]' pos="before">
-		<debug_text text="'wait before'" chance="$debugchance" />
-	</add>
-	<add sel='(//set_value[@name="$enemy" and @exact="null"])[2]' pos="before">
-		<debug_text text="'wait actions'" chance="$debugchance" />
-	</add>
-	<add sel='(//wait)[12]' pos="after">
-		<debug_text text="'wait after'" chance="$debugchance" />
-	</add>
-	<add sel='(//label[@name="finish"])[1]' pos="after">
-		<debug_text text="'finish'" chance="$debugchance" />
+	<!-- Some code in order.fight.escort checks if commander is docked, and docks there aswell.
+		 However the vanilla code only does that if commander order is 'Escort'. So here we copy the code, but check for 'ProtectStation' instead. -->
+	<add sel='//attention[@min="visible"]//do_if[@value="$internalordercalled?"]' pos="before"> <!-- suboptimal xpath. But the game refuses to accept every better one I tried. -->
+		<do_elseif value="(@$target.defaultorder.id == 'ProtectStation') and $target.dock and not this.assignedcontrolled.iscapitalship and ($target == this.assignedcontrolled.commander)">
+            <!-- Commander is itself a subordinate and docked. Go up the chain to find the super-commander that they are docked at ($locdocktarget) -->
+            <set_value name="$loctarget" exact="$target"/>
+            <set_value name="$evaluatedtargets" exact="[$loctarget]"/>
+            <do_while value="(@$loctarget.defaultorder.id == 'ProtectStation') and @$loctarget.commander and not $evaluatedtargets.indexof.{$loctarget.commander}">
+              	<set_value name="$loctarget" exact="$loctarget.commander"/>
+				<append_to_list name="$evaluatedtargets" exact="$loctarget"/>
+				<do_if value="$target.dock.container == $loctarget">
+					<set_value name="$locdocktarget" exact="$target.dock.container"/>
+					<break/>
+				</do_if>
+            </do_while>
+            <remove_value name="$evaluatedtargets"/>
+            <remove_value name="$loctarget"/>
+
+            <do_if value="@$locdocktarget.isoperational">
+				<!-- Also dock at commander's dock -->
+				<find_dockingbay name="$locdock" object="$locdocktarget">
+					<match_dock size="this.assignedcontrolled.docksize" free="true"/>
+				</find_dockingbay>
+				<do_if value="@$locdock.isoperational">
+					<debug_text text="'immediate commander %s %s %s already docked\nat distant commander %s %s %s.\ndocking.'.[@$target.idcode, @$target.knownname, $target, @$locdocktarget.idcode, @$locdocktarget.knownname, $locdocktarget]" chance="$debugchance"/>
+					<set_value name="$internalordercalled"/>
+					<leave_formation object="this.assignedcontrolled"/>
+					<!-- param callerid set below. important for error handling and so that subordinateorders from dockfollowers stored in this DockAndWait order. -->
+					<create_order name="$locorder" object="this.assignedcontrolled" id="'DockAndWait'" immediate="true">
+						<param name="destination" value="$locdocktarget"/>
+						<param name="dockfollowers" value="true"/>
+						<param name="internalorder" value="true"/>
+						<param name="debugchance" value="$debugchance"/>
+					</create_order>
+					<do_if value="$target.defaultorder.isrunning or ($target.order.id == 'DockAndWait')">
+						<!-- NB: important that this is NOT done via edit_order_param since that would trigger on_abort which cancels $subordinateorders -->
+						<signal_objects object="$target" param="'add_subordinateorder'" param2="$locorder"/>
+						<do_if value="$target.defaultorder.isrunning">
+							<edit_order_param order="$locorder" param="'callerid'" value="$target.defaultorder"/>
+						</do_if>
+						<do_else>
+							<edit_order_param order="$locorder" param="'callerid'" value="$target.order"/>
+						</do_else>
+					</do_if>
+					<do_else>
+						<set_value name="$locorders" exact="@$target.defaultorder.$subordinateorders.clone"/>
+						<do_if value="not @$locorders.count">
+							<set_value name="$locorders" exact="[]"/>
+						</do_if>
+						<append_to_list name="$locorders" exact="$locorder"/>
+						<edit_order_param order="$target.defaultorder" param="'subordinateorders'" value="$locorders"/>
+						<edit_order_param order="$locorder" param="'callerid'" value="$target.defaultorder"/>
+						<remove_value name="$locorders"/>
+					</do_else>
+					<remove_value name="$locorder"/>
+				</do_if>
+				<remove_value name="$locdock"/>
+            </do_if>
+            <remove_value name="$locdocktarget"/>
+		</do_elseif>
 	</add>
 
-	<add sel="//aiscript//on_abort" pos="prepend">
-		<debug_text text="'abort'" chance="$debugchance" />
-    </add>
+	<!-- Same as previous, but for other attention block. -->
+	<add sel='//attention[@min="unknown"]//do_if[@value="$internalordercalled?"]' pos="before"> <!-- suboptimal xpath. But the game refuses to accept every better one I tried. -->
+		<do_elseif value="(@$target.defaultorder.id == 'ProtectStation') and $target.dock and not this.assignedcontrolled.iscapitalship and ($target == this.assignedcontrolled.commander)">
+            <!-- Commander is itself a subordinate and docked. Go up the chain to find the super-commander that they are docked at ($locdocktarget) -->
+            <set_value name="$loctarget" exact="$target"/>
+            <set_value name="$evaluatedtargets" exact="[$loctarget]"/>
+            <do_while value="(@$loctarget.defaultorder.id == 'ProtectStation') and @$loctarget.commander and not $evaluatedtargets.indexof.{$loctarget.commander}">
+              	<set_value name="$loctarget" exact="$loctarget.commander"/>
+				<append_to_list name="$evaluatedtargets" exact="$loctarget"/>
+				<do_if value="$target.dock.container == $loctarget">
+					<set_value name="$locdocktarget" exact="$target.dock.container"/>
+					<break/>
+				</do_if>
+            </do_while>
+            <remove_value name="$evaluatedtargets"/>
+            <remove_value name="$loctarget"/>
 
-	<add sel='(//create_order[@name="$locorder"])[2]' pos="before">
-		<debug_text text="'DockAndWait'" chance="$debugchance" />
-    </add>
-
+            <do_if value="@$locdocktarget.isoperational">
+				<!-- Also dock at commander's dock -->
+				<find_dockingbay name="$locdock" object="$locdocktarget">
+					<match_dock size="this.assignedcontrolled.docksize" free="true"/>
+				</find_dockingbay>
+				<do_if value="@$locdock.isoperational">
+					<debug_text text="'immediate commander %s %s %s already docked\nat distant commander %s %s %s.\ndocking.'.[@$target.idcode, @$target.knownname, $target, @$locdocktarget.idcode, @$locdocktarget.knownname, $locdocktarget]" chance="$debugchance"/>
+					<set_value name="$internalordercalled"/>
+					<leave_formation object="this.assignedcontrolled"/>
+					<!-- param callerid set below. important for error handling and so that subordinateorders from dockfollowers stored in this DockAndWait order. -->
+					<create_order name="$locorder" object="this.assignedcontrolled" id="'DockAndWait'" immediate="true">
+						<param name="destination" value="$locdocktarget"/>
+						<param name="dockfollowers" value="true"/>
+						<param name="internalorder" value="true"/>
+						<param name="debugchance" value="$debugchance"/>
+					</create_order>
+					<do_if value="$target.defaultorder.isrunning or ($target.order.id == 'DockAndWait')">
+						<!-- NB: important that this is NOT done via edit_order_param since that would trigger on_abort which cancels $subordinateorders -->
+						<signal_objects object="$target" param="'add_subordinateorder'" param2="$locorder"/>
+						<do_if value="$target.defaultorder.isrunning">
+							<edit_order_param order="$locorder" param="'callerid'" value="$target.defaultorder"/>
+						</do_if>
+						<do_else>
+							<edit_order_param order="$locorder" param="'callerid'" value="$target.order"/>
+						</do_else>
+					</do_if>
+					<do_else>
+						<set_value name="$locorders" exact="@$target.defaultorder.$subordinateorders.clone"/>
+						<do_if value="not @$locorders.count">
+							<set_value name="$locorders" exact="[]"/>
+						</do_if>
+						<append_to_list name="$locorders" exact="$locorder"/>
+						<edit_order_param order="$target.defaultorder" param="'subordinateorders'" value="$locorders"/>
+						<edit_order_param order="$locorder" param="'callerid'" value="$target.defaultorder"/>
+						<remove_value name="$locorders"/>
+					</do_else>
+					<remove_value name="$locorder"/>
+				</do_if>
+				<remove_value name="$locdock"/>
+            </do_if>
+            <remove_value name="$locdocktarget"/>
+		</do_elseif>
+	</add>
 
 	<!--
 		Here we replace the $iscarrier assignment. We simply add another condition; if subordinate group is 'reactive' then true.
 	-->
 	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
-		<!--<do_if value="this.ship.isplayerowned">
-			<set_value name="$debugchance" exact="100"/>
-		</do_if>-->
+		<do_if value="true"> <!-- ProcessDiff complains if <replace> contains more than one tag -->
+			<!--<do_if value="this.ship.isplayerowned">-->
+			<do_if value="this.ship.idcode == 'HNQ-907'">
+				<set_value name="$debugchance" exact="100"/>
+			</do_if>
 
-		<!-- migrate pilot blackboard table to player blackboard -->
-		<do_if value="$target.pilot.$DockingReactive?">
-			<do_if value="not @player.entity.$RKN_ReactiveOptions.{'$' + $target.idcode}">
-				<debug_text text="'migrating reactive table to player blackboard %1 %2'.[$target.knownname, $target.idcode]" chance="$debugchance"/>
-				<set_value name="$reactivedockingOld" exact="@$target.pilot.$DockingReactive"/>
-				<do_if value="not player.entity.$RKN_ReactiveOptions?">
-					<set_value name="player.entity.$RKN_ReactiveOptions" exact="table[]" />
+			<!-- migrate pilot blackboard table to player blackboard -->
+			<do_if value="$target.pilot.$DockingReactive?">
+				<do_if value="not @player.entity.$RKN_ReactiveOptions.{'$' + $target.idcode}">
+					<debug_text text="'migrating reactive table to player blackboard %1 %2'.[$target.knownname, $target.idcode]" chance="$debugchance"/>
+					<set_value name="$reactivedockingOld" exact="@$target.pilot.$DockingReactive"/>
+					<do_if value="not player.entity.$RKN_ReactiveOptions?">
+						<set_value name="player.entity.$RKN_ReactiveOptions" exact="table[]" />
+					</do_if>
+					<set_value name="player.entity.$RKN_ReactiveOptions.{'$' + $target.idcode}" exact="$reactivedockingOld" />
 				</do_if>
-				<set_value name="player.entity.$RKN_ReactiveOptions.{'$' + $target.idcode}" exact="$reactivedockingOld" />
+				<debug_text text="'deleting reactive table from pilot blackboard %1 %2'.[$target.knownname, $target.idcode]" chance="$debugchance"/>
+				<remove_value name="$target.pilot.$DockingReactive"/>
 			</do_if>
-			<debug_text text="'deleting reactive table from pilot blackboard %1 %2'.[$target.knownname, $target.idcode]" chance="$debugchance"/>
-			<remove_value name="$target.pilot.$DockingReactive"/>
-		</do_if>
 
-		<do_if value="not this.assignedcontrolled.iscapitalship">
-			<do_if value="this.assignedcontrolled.subordinategroupdockoverride">
-				<set_value name="$iscarrierbased" exact="true" />
-			</do_if>
-			<do_else>
-				<do_if value="@$target.type == shiptype.carrier">
-					<set_value name="$reactive_default_option" exact="'$default_carrier_reactive'"/>
+			<do_if value="not this.assignedcontrolled.iscapitalship">
+				<do_if value="this.assignedcontrolled.subordinategroupdockoverride">
+					<set_value name="$iscarrierbased" exact="true" />
 				</do_if>
 				<do_else>
-					<set_value name="$reactive_default_option" exact="'$default_noncarrier_reactive'"/>
+					<do_if value="@$target.type == shiptype.carrier">
+						<set_value name="$reactive_default_option" exact="'$default_carrier_reactive'"/>
+					</do_if>
+					<do_else>
+						<set_value name="$reactive_default_option" exact="'$default_noncarrier_reactive'"/>
+					</do_else>
+					<set_value name="$commander" exact="$target" />
+					<include_interrupt_actions ref="IsReactiveDockingActive"/>
+					<set_value name="$iscarrierbased" exact="$reactive_active" />
+					<remove_value name="$reactive_default_option" />
+					<remove_value name="$reactive_active" />
 				</do_else>
-				<set_value name="$commander" exact="$target" />
-				<include_interrupt_actions ref="IsReactiveDockingActive"/>
-				<set_value name="$iscarrierbased" exact="$reactive_active" />
-				<remove_value name="$reactive_default_option" />
-				<remove_value name="$reactive_active" />
+			</do_if>
+			<do_else>
+				<set_value name="$iscarrierbased" exact="false" />
 			</do_else>
 		</do_if>
-		<do_else>
-			<set_value name="$iscarrierbased" exact="false" />
-		</do_else>
 
 	</replace>
 </diff>
