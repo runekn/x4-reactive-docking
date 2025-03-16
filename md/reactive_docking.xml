@@ -3,9 +3,9 @@
 	<cues>
 		<cue name="Config" namespace="this">
 			<actions>
-				<set_value name="$defaults" exact="@player.entity.$RKN_ReactiveDockingSettingsDefaults" />
+				<set_value name="$defaults" exact="@player.entity.$RKN_ReactiveDockingSettingsAI" />
 				<do_if value="$defaults == null">
-					<set_value name="player.entity.$RKN_ReactiveDockingSettingsDefaults" exact="table[$default_carrier_reactive = true, $default_noncarrier_reactive = false, $default_resupply_reactive = false, $default_station_reactive = false]" />
+					<set_value name="player.entity.$RKN_ReactiveDockingSettingsAI" exact="table[$default_carrier_reactive = true, $default_noncarrier_reactive = false, $default_resupply_reactive = false, $default_station_reactive = false]" />
 				</do_if>
 				<set_value name="$settings" exact="@player.entity.$RKN_ReactiveDockingSettings" />
 				<do_if value="$settings == null">

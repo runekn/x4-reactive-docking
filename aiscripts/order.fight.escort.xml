@@ -163,6 +163,7 @@
 					<set_value name="$commander" exact="$target" />
 					<include_interrupt_actions ref="IsReactiveDockingActive"/>
 					<set_value name="$iscarrierbased" exact="$reactive_active" />
+					<remove_value name="$commander" />
 					<remove_value name="$reactive_default_option" />
 					<remove_value name="$reactive_active" />
 				</do_else>
