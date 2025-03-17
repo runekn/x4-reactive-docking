@@ -642,7 +642,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							--row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
 							--row[3].handlers.onClick = function () return C.SetSubordinateGroupDockAtCommander(inputobject, i, not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) end
 							-- With this
-							RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu, isdockingpossible)
+							RKN_ReactiveDocking.addReactiveDockingMapMenu(row, inputobject, i, mode, active, mouseovertext, map_menu, isstation, isdockingpossible)
 							-- Runekn's Docking Options edits end here
 						end
 					end
