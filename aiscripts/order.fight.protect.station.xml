@@ -9,9 +9,9 @@
     <add sel="//aiscript/init">
         <set_value name="$subordinateorders" exact="[]"/>
 
-        <do_if value="this.ship.isplayerowned">
+        <!--<do_if value="this.ship.isplayerowned">
 			<set_value name="$debugchance" exact="100"/>
-		</do_if>
+		</do_if>-->
 
         <set_value name="$dockonly" exact="this.assignedcontrolled.subordinategroupdockoverride"/>
         <do_if value="not $dockonly">
@@ -75,7 +75,9 @@
 
     <add sel='//aiscript/attention/actions/do_if[@value="this.zone != $station.zone"]' pos="after">
         <set_order_syncpoint_reached order="this.ship.order" />
-        <do_if value="($reactive_active? or $dockonly?) and @this.ship.dock.container != $station">
+        <debug_text text="'reactive_active: ' + @$reactive_active" chance="$debugchance" />
+        <debug_text text="'dockonly: ' + @$dockonly" chance="$debugchance" />
+        <do_if value="(@$reactive_active or @$dockonly) and @this.ship.dock.container != $station">
             <!-- Try to dock at carrier -->
             <do_if value="not $cannotdock">
                 <do_if value="$reactive_active">
@@ -139,7 +141,7 @@
             </do_if>
         </do_if>
         <!-- Docked but not carriers based. Start undock. -->
-        <do_elseif value="not $reactive_active? and not $dockonly? and this.ship.dock">
+        <do_elseif value="not @$reactive_active and not @$dockonly and this.ship.dock">
             <debug_text text="'not carrierbased. undock'" chance="$debugchance" />
             <set_value name="$internalordercalled"/>
             <create_order object="this.ship" id="'Undock'" immediate="true"/>
@@ -154,7 +156,7 @@
     </add>
     
     <add sel='//aiscript/attention/actions/do_while[@value="$station.zone.exists"]' pos="before">
-        <do_if value="not $reactive_active? and not $dockonly?">
+        <do_if value="not @$reactive_active and not @$dockonly">
             <resume label="launched"/>
         </do_if>
         <do_while value="$station.zone.exists">

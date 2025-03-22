@@ -45,9 +45,9 @@
 			<set_value name="$commander" exact="$object.commander" />
             <set_value name="$reactive_default_option" exact="'$default_resupply_reactive'"/>
             <set_value name="$debugchance" exact="0" />
-            <do_if value="this.ship.isplayerowned">
+            <!--<do_if value="this.ship.isplayerowned">
                 <set_value name="$debugchance" exact="100" />
-            </do_if>
+            </do_if>-->
             <include_interrupt_actions ref="IsReactiveDockingActive"/>
             <do_if value="not $reactive_active">
                 <debug_text text="'undocking due to reactive being disabled'" chance="$debugchance"/>
