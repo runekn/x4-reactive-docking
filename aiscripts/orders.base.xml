@@ -38,16 +38,8 @@
                 </do_else>
             </do_elseif>
 
-            <do_if value="this.ship.isplayerowned">
-                <debug_text text="'test1'" chance="100" />
-            </do_if>
-
             <do_if value="not $object.allcommanders.indexof.{$parkingcontainer} and $object.parkedat">
                 <set_value name="$undock"/>
-            </do_if>
-
-            <do_if value="this.ship.isplayerowned">
-                <debug_text text="'test2'" chance="100" />
             </do_if>
 
 			<set_value name="$commander" exact="$object.commander" />

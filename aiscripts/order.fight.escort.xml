@@ -130,10 +130,9 @@
 	-->
 	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
 		<do_if value="true"> <!-- ProcessDiff complains if <replace> contains more than one tag -->
-			<!--<do_if value="this.ship.isplayerowned">-->
-			<do_if value="this.ship.idcode == 'HNQ-907'">
+			<!--<do_if value="this.ship.isplayerowned">
 				<set_value name="$debugchance" exact="100"/>
-			</do_if>
+			</do_if>-->
 
 			<!-- migrate pilot blackboard table to player blackboard -->
 			<do_if value="$target.pilot.$DockingReactive?">

@@ -1,5 +1,7 @@
 # Reactive Docking
 
+**READ: You may need to disable UI Protection mode ("Settings" -> "Extensions" -> "Protected UI Mode") before you can see the extension settings.**
+
 ## 3.0 Update Info!
 In prior version of Reactive Docking, the "Reactive" option selection was tied to the commander pilot. This lead to problems where taking over manual control of a ship, or changing pilot, would reset or otherwise change the docking behaviour. 
 For 3.0 I wanted to fix this by switching where I store the selected docking behaviour to a place such that it could now be tied to the ship, rather than the pilot. 3.0 includes some migration code which will migrate the selected docking options to the new storage and delete the old. 
