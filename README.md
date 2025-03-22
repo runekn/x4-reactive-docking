@@ -73,6 +73,7 @@ This mod achieves compatibility with other UI mods through the UI Extension and 
 
 ## Updates
 
+* 3.0.1: Fix 'Protect Station' order always causing ship to start docking
 * 3.0.0: Support for station defend subordinates. Support for auxiliary trade subordinates. Docking settings are now tied to the ship, rather than the pilot. Removed japanese translations, since they are outdated.
 * 2.3.3: Fix Reactive docking preventing Expanded Configuration Loader from working
 * 2.3.2: Use new official UI file declaration to avoid requiring disabled UI protection mode
