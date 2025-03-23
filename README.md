@@ -34,7 +34,7 @@ Example: Fighter assigned to defence of player HQ station.
 
 1. Docked (added): Subordinates will remain docked.
 2. Launched (default): Same as vanilla. Subordinates will patrol around the station in a random pattern, and engage any enemy entering the zone of control.
-3. Reactive (added): When no enemies are detected, ships will move towards available docking pads while keeping a lookout. If within 8km of docking pads they will initiate dock. Will launch and attack if enemies enter the zone of control. Also works with capital ships.
+3. Reactive (added): When no enemies are detected, ships will move towards available docking pads while keeping a lookout. If within 8km of docking pads they will initiate dock. Will launch and attack if enemies enter the zone of control.
 
 #### Auxiliary trader
 Example: Courier Vanguard assigned to trade for Nomad.
@@ -73,6 +73,7 @@ This mod achieves compatibility with other UI mods through the UI Extension and 
 
 ## Updates
 
+* 3.0.2: Disable reactive docking for capital ships defending station, so they don't take up every pier (I may enable it again if I remove the "Only one defend group" limit on stations). Fix auxiliary traders not continuing to search for trades after failing to do so in reactive mode. Exclude capital auxiliary traders from reactive mode.
 * 3.0.1: Fix 'Protect Station' order always causing ship to start docking
 * 3.0.0: Support for station defend subordinates. Support for auxiliary trade subordinates. Docking settings are now tied to the ship, rather than the pilot. Removed japanese translations, since they are outdated.
 * 2.3.3: Fix Reactive docking preventing Expanded Configuration Loader from working

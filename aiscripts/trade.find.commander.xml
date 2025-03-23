@@ -2,10 +2,29 @@
 
 <diff xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="aiscripts-diff.xsd">
     <add sel="//aiscript/init" pos="prepend">
-        <set_value name="$commander" exact="this.assignedcontrolled.commander" />
-        <set_value name="$reactive_default_option" exact="'$default_resupply_reactive'"/>
-        <include_interrupt_actions ref="IsReactiveDockingActive"/>
-        <remove_value name="$reactive_default_option" />
+        <!--<do_if value="this.ship.isplayerowned">
+			<set_value name="$debugchance" exact="100"/>
+		</do_if>-->
+        
+        <do_if value="not this.assignedcontrolled.iscapitalship">
+            <set_value name="$commander" exact="this.assignedcontrolled.commander" />
+            <set_value name="$reactive_default_option" exact="'$default_resupply_reactive'"/>
+            <include_interrupt_actions ref="IsReactiveDockingActive"/>
+            <remove_value name="$reactive_default_option" />
+        </do_if>
+        <do_else>
+            <set_value name="$reactive_active" exact="false" />
+        </do_else>
+
+        <do_if value="$reactive_active and this.assignedcontrolled.commander.isoperational">
+            <find_dockingbay name="$locdock" object="this.assignedcontrolled.commander">
+                <match_dock size="this.assignedcontrolled.docksize" storage="false"/>
+            </find_dockingbay>
+            <do_if value="not @$locdock.isoperational">
+                <set_value name="$reactive_active" exact="false"/>
+            </do_if>
+            <remove_value name="$locdock"/>
+        </do_if>
     </add>
 
     <add sel='//aiscript/attention/actions/run_script[@name="&apos;move.idle&apos;"]' pos="before">
@@ -20,7 +39,11 @@
                     <param name="debugchance" value="$debugchance"/>
                 </create_order>
             </do_if>
-            <wait time="30s" />
+            <do_else>
+                <debug_text text="'already docked at resupply ship. proceeding to wait'" chance="$debugchance" />    
+            </do_else>
+            <wait min="15s" max="30s" />
+            <debug_text text="'returning script to start'" chance="$debugchance" />
             <resume label="start" />
         </do_if>
     </add>

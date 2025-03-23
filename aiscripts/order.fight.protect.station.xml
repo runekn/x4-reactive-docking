@@ -14,7 +14,7 @@
 		</do_if>-->
 
         <set_value name="$dockonly" exact="this.assignedcontrolled.subordinategroupdockoverride"/>
-        <do_if value="not $dockonly">
+        <do_if value="not $dockonly and not this.assignedcontrolled.iscapitalship">
 			<set_value name="$commander" exact="$station" />
 			<set_value name="$reactive_default_option" exact="'$default_station_reactive'" />
             <include_interrupt_actions ref="IsReactiveDockingActive"/>
@@ -75,8 +75,6 @@
 
     <add sel='//aiscript/attention/actions/do_if[@value="this.zone != $station.zone"]' pos="after">
         <set_order_syncpoint_reached order="this.ship.order" />
-        <debug_text text="'reactive_active: ' + @$reactive_active" chance="$debugchance" />
-        <debug_text text="'dockonly: ' + @$dockonly" chance="$debugchance" />
         <do_if value="(@$reactive_active or @$dockonly) and @this.ship.dock.container != $station">
             <!-- Try to dock at carrier -->
             <do_if value="not $cannotdock">
@@ -165,7 +163,7 @@
                 <resume label="finish" />
             </do_if>
 
-            <wait time="30s">
+            <wait exact="30s">
                 <interrupt>
                     <conditions>
                         <check_any>

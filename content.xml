@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<content id="ws_2463228815" name="Reactive Docking" description="Separates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to both ship types" author="Runekn" version="301" date="2025-03-22" save="0" enabled="1" sync="false" lastupdate="1742632400">
+<content id="ws_2463228815" name="Reactive Docking" description="Separates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to both ship types" author="Runekn" version="302" date="2025-03-23" save="0" enabled="1" sync="false" lastupdate="1742670965">
   <dependency id="ws_2042901274" optional="true" name="SirNukes Mod Support APIs"/>
   <dependency id="kuerteeUIExtensionsAndHUD" optional="true" version="750"/>
   <text language="44" name="Reactive Docking" description="Separates the different docking behaviors for subordinates of carrier and non-carrier (but with landing pads) into options available to both ship types" author="Runekn"/>

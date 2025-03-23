@@ -68,7 +68,7 @@
 						$onClick = OnSMOCheckboxChange
 					]"/>
 				<signal_cue_instantly cue="md.Simple_Menu_API.Add_Row"/>
-				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 6}]" comment="Reactive as default for stations"/>
+				<signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1, $text={181114415, 6}]" comment="Reactive as default for station defenders"/>
 				<signal_cue_instantly
 					cue = "md.Simple_Menu_API.Make_CheckBox"
 					param = "table[
