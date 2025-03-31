@@ -73,6 +73,7 @@ This mod achieves compatibility with other UI mods through the UI Extension and 
 
 ## Updates
 
+* 3.0.3: Stop station defenders on reactive from pursuing targets beyond station defence radius
 * 3.0.2: Disable reactive docking for capital ships defending station, so they don't take up every pier (I may enable it again if I remove the "Only one defend group" limit on stations). Fix auxiliary traders not continuing to search for trades after failing to do so in reactive mode. Exclude capital auxiliary traders from reactive mode.
 * 3.0.1: Fix 'Protect Station' order always causing ship to start docking
 * 3.0.0: Support for station defend subordinates. Support for auxiliary trade subordinates. Docking settings are now tied to the ship, rather than the pilot. Removed japanese translations, since they are outdated.

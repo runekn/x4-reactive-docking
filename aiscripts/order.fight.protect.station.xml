@@ -236,6 +236,7 @@
                     <create_order id="'Attack'" object="this.ship" immediate="true">
                         <param name="primarytarget" value="$enemy"/>
                         <param name="escort" value="$station" />
+                        <param name="pursuetargets" value="false" />
                         <param name="pursuedistance" value="$radius" />
                         <param name="allowothertargets" value="true"/>
                         <param name="targetclasses" value="[class.ship_s, class.ship_m, class.ship_l, class.ship_xl, class.station]"/>
@@ -245,7 +246,7 @@
                         <param name="radiusanchorspace" value="$radiusanchorspace"/>
                         <param name="internalorder" value="true"/>
                         <param name="checkrelation" value="true"/>
-                        <param name="enforceradius" value="this.isplayerowned"/>
+                        <param name="enforceradius" value="this.ship.isplayerowned"/>
                         <param name="debugchance" value="$debugchance" />
                     </create_order>
                 </do_if>
