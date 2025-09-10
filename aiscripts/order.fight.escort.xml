@@ -5,7 +5,7 @@
 	<!-- Some code in order.fight.escort checks if commander is docked, and docks there aswell.
 		 However the vanilla code only does that if commander order is 'Escort'. So here we copy the code, but check for 'ProtectStation' instead. -->
 	<add sel='//attention[@min="visible"]//do_if[@value="$internalordercalled?"]' pos="before"> <!-- suboptimal xpath. But the game refuses to accept every better one I tried. -->
-		<do_elseif value="(@$target.defaultorder.id == 'ProtectStation') and $target.dock and not this.assignedcontrolled.iscapitalship and ($target == this.assignedcontrolled.commander)">
+		<do_elseif value="(@$target.defaultorder.id == 'ProtectStation') and $target.dock and ($target.order.id != 'Undock') and not this.assignedcontrolled.iscapitalship and ($target == this.assignedcontrolled.commander)">
             <!-- Commander is itself a subordinate and docked. Go up the chain to find the super-commander that they are docked at ($locdocktarget) -->
             <set_value name="$loctarget" exact="$target"/>
             <set_value name="$evaluatedtargets" exact="[$loctarget]"/>
@@ -25,6 +25,11 @@
 				<find_dockingbay name="$locdock" object="$locdocktarget">
 					<match_dock size="this.assignedcontrolled.docksize" free="true"/>
 				</find_dockingbay>
+				<do_if value="not $locdock">
+					<find_dockingbay name="$locdock" object="$locdocktarget">
+						<match_dock size="this.assignedcontrolled.docksize" free="true" storage="true"/>
+					</find_dockingbay>
+				</do_if>
 				<do_if value="@$locdock.isoperational">
 					<debug_text text="'immediate commander %s %s %s already docked\nat distant commander %s %s %s.\ndocking.'.[@$target.idcode, @$target.knownname, $target, @$locdocktarget.idcode, @$locdocktarget.knownname, $locdocktarget]" chance="$debugchance"/>
 					<set_value name="$internalordercalled"/>
@@ -66,7 +71,7 @@
 
 	<!-- Same as previous, but for other attention block. -->
 	<add sel='//attention[@min="unknown"]//do_if[@value="$internalordercalled?"]' pos="before"> <!-- suboptimal xpath. But the game refuses to accept every better one I tried. -->
-		<do_elseif value="(@$target.defaultorder.id == 'ProtectStation') and $target.dock and not this.assignedcontrolled.iscapitalship and ($target == this.assignedcontrolled.commander)">
+		<do_elseif value="(@$target.defaultorder.id == 'ProtectStation') and $target.dock and ($target.order.id != 'Undock') and not this.assignedcontrolled.iscapitalship and ($target == this.assignedcontrolled.commander)">
             <!-- Commander is itself a subordinate and docked. Go up the chain to find the super-commander that they are docked at ($locdocktarget) -->
             <set_value name="$loctarget" exact="$target"/>
             <set_value name="$evaluatedtargets" exact="[$loctarget]"/>
@@ -86,6 +91,11 @@
 				<find_dockingbay name="$locdock" object="$locdocktarget">
 					<match_dock size="this.assignedcontrolled.docksize" free="true"/>
 				</find_dockingbay>
+				<do_if value="not $locdock">
+					<find_dockingbay name="$locdock" object="$locdocktarget">
+						<match_dock size="this.assignedcontrolled.docksize" free="true" storage="true"/>
+					</find_dockingbay>
+				</do_if>
 				<do_if value="@$locdock.isoperational">
 					<debug_text text="'immediate commander %s %s %s already docked\nat distant commander %s %s %s.\ndocking.'.[@$target.idcode, @$target.knownname, $target, @$locdocktarget.idcode, @$locdocktarget.knownname, $locdocktarget]" chance="$debugchance"/>
 					<set_value name="$internalordercalled"/>
@@ -130,9 +140,9 @@
 	-->
 	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
 		<do_if value="true"> <!-- ProcessDiff complains if <replace> contains more than one tag -->
-			<!--<do_if value="this.ship.isplayerowned">
+			<do_if value="this.assignedcontrolled.idcode == 'CAQ-090'">
 				<set_value name="$debugchance" exact="100"/>
-			</do_if>-->
+			</do_if>
 
 			<!-- migrate pilot blackboard table to player blackboard -->
 			<do_if value="$target.pilot.$DockingReactive?">

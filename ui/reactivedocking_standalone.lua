@@ -50,7 +50,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	local menu = map_menu
 	
 	local object64 = ConvertStringTo64Bit(tostring(inputobject))
-	local isplayerowned, isonlineobject, isenemy, ishostile = GetComponentData(object64, "isplayerowned", "isonlineobject", "isenemy", "ishostile")
+	local isplayerowned, isonlineobject, isenemy, ishostile, classid = GetComponentData(object64, "isplayerowned", "isonlineobject", "isenemy", "ishostile", "classid")
 	local titlecolor = Color["text_normal"]
 	if isplayerowned then
 		titlecolor = menu.holomapcolor.playercolor
@@ -68,11 +68,12 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	local loadout = {}
 	if mode == "ship" or mode == "station" then
 		loadout = { ["component"] = {}, ["macro"] = {}, ["ware"] = {} }
+		local isdefensible = Helper.isComponentClass(classid, "defensible")
 		for i, upgradetype in ipairs(Helper.upgradetypes) do
 			if upgradetype.supertype == "macro" then
 				loadout.component[upgradetype.type] = {}
 				local numslots = 0
-				if C.IsComponentClass(inputobject, "defensible") then
+				if isdefensible then
 					numslots = tonumber(C.GetNumUpgradeSlots(inputobject, "", upgradetype.type))
 				end
 				for j = 1, numslots do
@@ -147,7 +148,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 			pilotname, skilltable, postname, aicommandstack, aicommand, aicommandparam, aicommandaction, aicommandactionparam = GetComponentData(pilot, "name", "skills", "postname", "aicommandstack", "aicommand", "aicommandparam", "aicommandaction", "aicommandactionparam")
 		end
 
-		local isbigship = C.IsComponentClass(inputobject, "ship_m") or C.IsComponentClass(inputobject, "ship_l") or C.IsComponentClass(inputobject, "ship_xl")
+		local isbigship = Helper.isComponentClass(classid, "ship_m") or Helper.isComponentClass(classid, "ship_l") or Helper.isComponentClass(classid, "ship_xl")
 		-- weapon config
 		if isplayerowned and (#loadout.component.weapon > 0) then
 			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
@@ -203,12 +204,12 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					row[7 + j].handlers.onClick = function() menu.infoSetWeaponGroup(inputobject, gun, false, j, not uiweapongroups.secondary[j]) end
 				end
 
-				if IsComponentClass(gun, "missilelauncher") then
+				local gunmacro, classid = GetComponentData(gun, "macro", "classid")
+				if Helper.isComponentClass(classid, "missilelauncher") then
 					local nummissiletypes = C.GetNumAllMissiles(inputobject)
 					local missilestoragetable = ffi.new("AmmoData[?]", nummissiletypes)
 					nummissiletypes = C.GetAllMissiles(missilestoragetable, nummissiletypes, inputobject)
 
-					local gunmacro = GetComponentData(gun, "macro")
 					local dropdowndata = {}
 					for j = 0, nummissiletypes - 1 do
 						local ammomacro = ffi.string(missilestoragetable[j].macro)
@@ -232,12 +233,11 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					row[2]:createText((ReadText(1001, 2800) .. ReadText(1001, 120)))	-- Ammunition, :
 					row[3]:setColSpan(11):createDropDown(dropdowndata, {startOption = currentammomacro, active = dropdownactive})
 					row[3].handlers.onDropDownConfirmed = function(_, newammomacro) C.SetAmmoOfWeapon(gun, newammomacro) end
-				elseif pilot and IsValidComponent(pilot) and IsComponentClass(gun, "bomblauncher") then
+				elseif pilot and IsValidComponent(pilot) and Helper.isComponentClass(classid, "bomblauncher") then
 					local numbombtypes = C.GetNumAllInventoryBombs(pilot)
 					local bombstoragetable = ffi.new("AmmoData[?]", numbombtypes)
 					numbombtypes = C.GetAllInventoryBombs(bombstoragetable, numbombtypes, pilot)
 
-					local gunmacro = GetComponentData(gun, "macro")
 					local dropdowndata = {}
 					for j = 0, numbombtypes - 1 do
 						local ammomacro = ffi.string(bombstoragetable[j].macro)
@@ -443,7 +443,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		-- drones
 		local isplayeroccupiedship = menu.infoSubmenuObject == ConvertStringTo64Bit(tostring(C.GetPlayerOccupiedShipID()))
 
-		local unitstoragetable = C.IsComponentClass(object64, "defensible") and GetUnitStorageData(object64) or { stored = 0, capacity = 0 }
+		local unitstoragetable = Helper.isComponentClass(classid, "defensible") and GetUnitStorageData(object64) or { stored = 0, capacity = 0 }
 		local locunitcapacity = Helper.unlockInfo(unitinfo_capacity, tostring(unitstoragetable.capacity))
 		local locunitcount = Helper.unlockInfo(unitinfo_amount, tostring(unitstoragetable.stored))
 		menu.drones = {}
@@ -532,7 +532,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		end
 		-- subordinates
 		if isplayerowned then
-			if C.IsComponentClass(inputobject, "controllable") then
+			if Helper.isComponentClass(classid, "controllable") then
 				local subordinates = GetSubordinates(inputobject)
 				local groups = {}
 				local usedassignments = {}
@@ -564,7 +564,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
 					row[1]:setColSpan(13):createText(ReadText(1001, 8626), Helper.headerRowCenteredProperties)
 
-					local isstation = C.IsComponentClass(inputobject, "station")
+					local isstation = Helper.isComponentClass(classid, "station")
 					for i = 1, isstation and 5 or 10 do
 						if groups[i] then
 							local defenceactive = true
@@ -590,7 +590,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 								table.insert(subordinateassignments, { id = "tradeforbuildstorage", text = ReadText(20208, 40801), icon = "", displayremoveoption = false, active = tradeforbuildstorageactive, mouseovertext = tradeforbuildstorageactive and "" or ReadText(1026, 8603) })
 								local salvageactive = (groups[i].numassignabletugships == #groups[i].subordinates) and ((not usedassignments["salvage"]) or (usedassignments["salvage"] == i))
 								table.insert(subordinateassignments, { id = "salvage", text = ReadText(20208, 41401), icon = "", displayremoveoption = false, active = salvageactive, mouseovertext = salvageactive and "" or ReadText(1026, 8610) })
-							elseif C.IsComponentClass(inputobject, "ship") then
+							elseif Helper.isComponentClass(classid, "ship") then
 								-- position defence
 								local parentcommander = ConvertIDTo64Bit(GetCommander(inputobject))
 								local isfleetcommander = (not parentcommander) and (#subordinates > 0)
@@ -658,7 +658,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 			totalnummissiles = totalnummissiles + missilestoragetable[i].amount
 		end
 		local missilecapacity = 0
-		if C.IsComponentClass(inputobject, "defensible") then
+		if Helper.isComponentClass(classid, "defensible") then
 			missilecapacity = GetComponentData(inputobject, "missilecapacity")
 		end
 		local locmissilecapacity = Helper.unlockInfo(defenceinfo_low, tostring(missilecapacity))
@@ -974,7 +974,7 @@ function do_menu.display()
 			end
 		end
 	end
-	local canwareexchange = isplayerowned and ((not C.IsComponentClass(menu.currentcontainer, "ship")) or aipilot) and (not isbuilderbusy)
+	local canwareexchange = isplayerowned and ((not C.IsComponentClass(menu.currentcontainer, "ship")) or aipilot) and (not isbuilderbusy) and (menu.currentplayership ~= 0)
 
 	--NB: equipment docks currently do not have ship traders
 	local dockedplayerships = {}
@@ -1051,31 +1051,18 @@ function do_menu.display()
 
 	if menu.mode == "cockpit" then
 		local row = table_header:addRow("buttonRow1", { fixed = true })
-		-- cover button
-		local coverfaction = ""
-		if menu.currentplayership ~= 0 then
-			coverfaction = ffi.string(C.GetObjectCoverAbilityFaction(menu.currentplayership))
-		end
-		local currentcoverfaction = ffi.string(C.GetPlayerCoverFaction())
-		if coverfaction ~= "" then
-			local mouseovertext = ReadText(1026, 8611) .. ReadText(1001, 120) .. " " .. ColorText["licence"] .. GetFactionData(coverfaction, "name") .. "\27X"
-			local shortcut = GetLocalizedKeyName("action", 377)
-			if shortcut ~= "" then
-				mouseovertext = mouseovertext .. " (" .. shortcut .. ")"
-			end
-			row[1]:createButton({ mouseOverText = mouseovertext, helpOverlayID = "docked_cover", helpOverlayText = " ", helpOverlayHighlightOnly = true, uiTriggerID = "docked_cover" }):setText((currentcoverfaction == "") and ReadText(1001, 8640) or ReadText(1001, 8641), config.activeButtonTextProperties)	-- "Enable Cover"
-			row[1].handlers.onClick = function () return menu.buttonCover((currentcoverfaction == "") and coverfaction or "") end
-		else
-			row[1]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
-		end
+		row[1]:createButton(config.inactiveButtonProperties):setText("", config.inactiveButtonTextProperties)	-- dummy
 
 		local active = ((menu.currentplayership ~= 0) or menu.secondarycontrolpost) and C.CanPlayerStandUp()
 		row[2]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 277), helpOverlayID = "docked_getup", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1002, 20014), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Get Up"
 		if active then
 			row[2].handlers.onClick = menu.buttonGetUp
 		end
-		row[7]:createButton({ mouseOverText = GetLocalizedKeyName("action", 316), helpOverlayID = "docked_shipinformation", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1001, 8602), { halign = "center" })	-- "Ship Information"
-		row[7].handlers.onClick = menu.buttonShipInfo
+		local active = C.IsStoryFeatureUnlocked("x4ep1_map")
+		row[7]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 316), helpOverlayID = "docked_shipinformation", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1001, 8602), { halign = "center" })	-- "Ship Information"
+		if active then
+			row[7].handlers.onClick = menu.buttonShipInfo
+		end
 
 		local row = table_header:addRow("buttonRow3", { fixed = true })
 		local currentactivity = GetPlayerActivity()
@@ -1215,6 +1202,68 @@ function do_menu.display()
 		end
 
 		if menu.currentplayership ~= 0 then
+			table_header:addEmptyRow(yoffset / 2)
+
+			local numstances = C.GetNumShipStances(menu.currentplayership)
+			if numstances > 0 then
+				local stanceoptions = {}
+				local buf = ffi.new("ShipStanceInfo[?]", numstances)
+				numstances = C.GetShipStances(buf, numstances, menu.currentplayership)
+				for i = 0, numstances - 1 do
+					table.insert(stanceoptions, { id = ffi.string(buf[i].id), text = "\27[" .. ffi.string(buf[i].iconid) .. "] " .. ffi.string(buf[i].name), text2 = "", icon = "", displayremoveoption = false })
+				end
+				if ffi.string(C.GetShipDefaultStance(menu.currentplayership)) == "" then -- sic! If the default stance doesn't exist, we need to add a neutral option
+					table.insert(stanceoptions, 1, { id = "neutral", text = "\27[stance_neutral] " .. ReadText(1001, 8644), text2 = "", icon = "", displayremoveoption = false })
+				end
+
+				local row = table_header:addRow(true, { bgColor = Color["row_background_unselectable"] })
+				row[1]:setColSpan(6):createText(ReadText(1001, 8642))
+				row[7]:createDropDown(stanceoptions, { active = function () return C.CanShipSwitchStance(menu.currentplayership) end, startOption = function () local activestance = ffi.string(C.GetShipActiveStance(menu.currentplayership)); return (activestance == "") and "neutral" or activestance end, mouseOverText = function () return (not C.CanShipSwitchStance(menu.currentplayership)) and ReadText(1026, 8612) or "" end })
+				row[7].handlers.onDropDownConfirmed = function (_, id) return C.SetShipStance(menu.currentplayership, id) end
+			end
+			
+			-- cover button
+			local coverfaction = ""
+			if menu.currentplayership ~= 0 then
+				coverfaction = ffi.string(C.GetObjectCoverAbilityFaction(menu.currentplayership))
+			end
+			local currentcoverfaction = ffi.string(C.GetPlayerCoverFaction())
+			if coverfaction ~= "" then
+				-- story case
+				local row = table_header:addRow(true, { bgColor = Color["row_background_unselectable"] })
+				row[1]:setColSpan(6):createText(ReadText(1001, 8643))
+
+				local mouseovertext = ReadText(1026, 8611) .. ReadText(1001, 120) .. " " .. ColorText["licence"] .. GetFactionData(coverfaction, "name") .. "\27X"
+				local shortcut = GetLocalizedKeyName("action", 377)
+				if shortcut ~= "" then
+					mouseovertext = mouseovertext .. " (" .. shortcut .. ")"
+				end
+				row[7]:createButton({ active = function () return C.CanPlayerActivateCoverAbility() end, mouseOverText = mouseovertext, helpOverlayID = "docked_cover", helpOverlayText = " ", helpOverlayHighlightOnly = true, uiTriggerID = "docked_cover" }):setText((currentcoverfaction == "") and ReadText(1001, 8640) or ReadText(1001, 8641), config.activeButtonTextProperties)	-- "Enable Cover"
+				row[7].handlers.onClick = function () return menu.buttonCover((currentcoverfaction == "") and coverfaction or "") end
+			elseif C.IsPlayerCoverable(menu.currentplayership) then
+				-- general case
+				local row = table_header:addRow(true, { bgColor = Color["row_background_unselectable"] })
+				row[1]:setColSpan(6):createText(ReadText(1001, 8643))
+
+				local relations = GetLibrary("factions")
+				for i = #relations, 1, -1 do
+					local relation = relations[i]
+					if (relation.id == "player") or (relation.id == "xenon") or (relation.id == "khaak") then
+						table.remove(relations, i)
+					end
+				end
+				table.sort(relations, Helper.sortName)
+
+				local factionoptions = {}
+				for _, relation in ipairs(relations) do
+					table.insert(factionoptions, { id = relation.id, text = "\27[" .. relation.icon .. "] " .. relation.name, text2 = "", icon = "", displayremoveoption = false })
+				end
+				table.insert(factionoptions, 1, { id = "none", text = "\27[faction_ownerless] " .. ReadText(1001, 38), text2 = "", icon = "", displayremoveoption = false })
+
+				row[7]:createDropDown(factionoptions, { active = function () return C.CanPlayerActivateCoverAbility() end, startOption = (currentcoverfaction == "") and "none" or currentcoverfaction })
+				row[7].handlers.onDropDownConfirmed = function (_, id) return menu.buttonCover((id == "none") and "" or id) end
+			end
+
 			local weapons = {}
 			local numslots = tonumber(C.GetNumUpgradeSlots(menu.currentplayership, "", "weapon"))
 			for j = 1, numslots do
@@ -1633,7 +1682,7 @@ function do_menu.display()
 		end
 	else
 		local row = table_header:addRow("buttonRow1", { fixed = true })
-		local active = canwareexchange
+		local active = canwareexchange and C.IsStoryFeatureUnlocked("x4ep1_map")
 		local mouseovertext
 		if (not active) and isplayerowned then
 			if C.IsComponentClass(menu.currentcontainer, "ship") then
@@ -1651,7 +1700,7 @@ function do_menu.display()
 		if active then
 			row[2].handlers.onClick = menu.buttonGetUp
 		end
-		local active = menu.currentplayership ~= 0
+		local active = (menu.currentplayership ~= 0) and C.IsStoryFeatureUnlocked("x4ep1_map")
 		row[7]:createButton(active and { mouseOverText = GetLocalizedKeyName("action", 316), helpOverlayID = "docked_shipinfo", helpOverlayText = " ", helpOverlayHighlightOnly = true } or config.inactiveButtonProperties):setText(ReadText(1001, 8602), active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- "Ship Information"
 		if active then
 			row[7].handlers.onClick = menu.buttonDockedShipInfo
