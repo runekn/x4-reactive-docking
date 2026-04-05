@@ -50,36 +50,38 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	local menu = map_menu
 	
 	local object64 = ConvertStringTo64Bit(tostring(inputobject))
-	local isplayerowned, isonlineobject, isenemy, ishostile, classid = GetComponentData(object64, "isplayerowned", "isonlineobject", "isenemy", "ishostile", "classid")
-	local titlecolor = Color["text_normal"]
-	if isplayerowned then
-		titlecolor = menu.holomapcolor.playercolor
-		if object64 == C.GetPlayerObjectID() then
-			titlecolor = menu.holomapcolor.currentplayershipcolor
-		end
-	elseif isonlineobject and menu.getFilterOption("layer_other", false) and menu.getFilterOption("think_diplomacy_highlightvisitor", false) then
-		titlecolor = menu.holomapcolor.visitorcolor
-	elseif ishostile then
-		titlecolor = menu.holomapcolor.hostilecolor
-	elseif isenemy then
-		titlecolor = menu.holomapcolor.enemycolor
-	end
+	local isplayerowned, classid = GetComponentData(object64, "isplayerowned", "classid")
+	local titlecolor = menu.getObjectColor(object64)
 
 	local loadout = {}
-	if mode == "ship" or mode == "station" then
+	if (mode == "ship") or (mode == "station") then
 		loadout = { ["component"] = {}, ["macro"] = {}, ["ware"] = {} }
 		local isdefensible = Helper.isComponentClass(classid, "defensible")
 		for i, upgradetype in ipairs(Helper.upgradetypes) do
 			if upgradetype.supertype == "macro" then
 				loadout.component[upgradetype.type] = {}
-				local numslots = 0
-				if isdefensible then
-					numslots = tonumber(C.GetNumUpgradeSlots(inputobject, "", upgradetype.type))
-				end
-				for j = 1, numslots do
-					local current = C.GetUpgradeSlotCurrentComponent(inputobject, upgradetype.type, j)
-					if current ~= 0 then
-						table.insert(loadout.component[upgradetype.type], current)
+				if mode == "station" then
+					local modules = {}
+					Helper.ffiVLA(modules, "UniverseID", C.GetNumStationModules, C.GetStationModules, object64, false, false)
+					for _, module in ipairs(modules) do
+						local numslots = tonumber(C.GetNumUpgradeSlots(module, "", upgradetype.type))
+						for j = 1, numslots do
+							local current = C.GetUpgradeSlotCurrentComponent(module, upgradetype.type, j)
+							if current ~= 0 then
+								table.insert(loadout.component[upgradetype.type], current)
+							end
+						end
+					end
+				else
+					local numslots = 0
+					if isdefensible then
+						numslots = tonumber(C.GetNumUpgradeSlots(inputobject, "", upgradetype.type))
+					end
+					for j = 1, numslots do
+						local current = C.GetUpgradeSlotCurrentComponent(inputobject, upgradetype.type, j)
+						if current ~= 0 then
+							table.insert(loadout.component[upgradetype.type], current)
+						end
 					end
 				end
 			elseif upgradetype.supertype == "virtualmacro" then
@@ -118,26 +120,16 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 	local unitinfo_details =			cheatsecrecy or C.IsInfoUnlockedForPlayer(inputobject, "units_details")
 	local equipment_mods =				cheatsecrecy or C.IsInfoUnlockedForPlayer(inputobject, "equipment_mods")
 
-	--- title ---
-	local row = inputtable:addRow(false, { fixed = true, bgColor = Color["row_title_background"] })
-	row[1]:setColSpan(13):createText(ReadText(1001, 2427), Helper.headerRowCenteredProperties)
-	local row = inputtable:addRow(false, { fixed = true, bgColor = Color["row_title_background"] })
-	row[1]:setColSpan(13):createText(ReadText(1001, 9413), Helper.headerRowCenteredProperties)
-
 	local objectname = Helper.unlockInfo(nameinfo, ffi.string(C.GetComponentName(inputobject)))
 	-- object name
-	local row = inputtable:addRow("info_focus", { fixed = true, bgColor = Color["row_title_background"] })
-	row[13]:createButton({ width = config.mapRowHeight, cellBGColor = Color["row_background"] }):setIcon("menu_center_selection", { width = config.mapRowHeight, height = config.mapRowHeight, y = (Helper.headerRow1Height - config.mapRowHeight) / 2 })
+	local row = inputtable:addRow("info_focus", { fixed = true })
+	row[13]:createButton({ width = config.mapRowHeight, height = config.mapRowHeight, cellBGColor = Color["row_background"] }):setIcon("menu_center_selection", { width = config.mapRowHeight, height = config.mapRowHeight })
 	row[13].handlers.onClick = function () return C.SetFocusMapComponent(menu.holomap, menu.infoSubmenuObject, true) end
 	if (mode == "ship") or (mode == "station") then
-		row[1]:setBackgroundColSpan(12):setColSpan(6):createText(objectname, Helper.headerRow1Properties)
-		row[1].properties.color = titlecolor
-		row[7]:setColSpan(6):createText(Helper.unlockInfo(nameinfo, ffi.string(C.GetObjectIDCode(inputobject))), Helper.headerRow1Properties)
-		row[7].properties.halign = "right"
-		row[7].properties.color = titlecolor
+		row[1]:setBackgroundColSpan(12):setColSpan(6):createText(objectname, { fontsize = Helper.headerRow1FontSize, color = titlecolor })
+		row[7]:setColSpan(6):createText(Helper.unlockInfo(nameinfo, ffi.string(C.GetObjectIDCode(inputobject))), { fontsize = Helper.headerRow1FontSize, halign = "right", color = titlecolor })
 	else
-		row[1]:setBackgroundColSpan(12):setColSpan(12):createText(objectname, Helper.headerRow1Properties)
-		row[1].properties.color = titlecolor
+		row[1]:setBackgroundColSpan(12):setColSpan(12):createText(objectname, { fontsize = Helper.headerRow1FontSize, color = titlecolor })
 	end
 
 	if mode == "ship" then
@@ -151,15 +143,17 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		local isbigship = Helper.isComponentClass(classid, "ship_m") or Helper.isComponentClass(classid, "ship_l") or Helper.isComponentClass(classid, "ship_xl")
 		-- weapon config
 		if isplayerowned and (#loadout.component.weapon > 0) then
-			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+			local row = inputtable:addRow(false, Helper.headerRowProperties)
 			row[1]:setColSpan(13):createText(ReadText(1001, 9409), Helper.headerRowCenteredProperties) -- Weapon Configuration
+
+			local weaponrowgroup = inputtable:addRowGroup({  })
 			-- subheader
-			local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
+			local row = weaponrowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
 			row[3]:setColSpan(5):createText(ReadText(1001, 9410), { font = Helper.standardFontBold }) -- Primary
 			row[8]:setColSpan(6):createText(ReadText(1001, 9411), { font = Helper.standardFontBold }) -- Secondary
 			-- active weapon groups
-			local row = inputtable:addRow("info_weaponconfig_active", {  })
-			row[2]:createText(ReadText(1001, 11218))
+			local row = weaponrowgroup:addRow("info_weaponconfig_active", {  })
+			row[1]:setColSpan(2):createText(ReadText(1001, 11218))
 			for j = 1, 4 do
 				row[2 + j]:createCheckBox(function () return C.GetDefensibleActiveWeaponGroup(inputobject, true) == j end, { width = config.mapRowHeight, height = config.mapRowHeight, symbol = "arrow", bgColor = function () return menu.infoWeaponGroupCheckBoxColor(inputobject, j, true) end })
 				row[2 + j].handlers.onClick = function () C.SetDefensibleActiveWeaponGroup(inputobject, true, j) end
@@ -168,7 +162,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 				row[7 + j]:createCheckBox(function () return C.GetDefensibleActiveWeaponGroup(inputobject, false) == j end, { width = config.mapRowHeight, height = config.mapRowHeight, symbol = "arrow", bgColor = function () return menu.infoWeaponGroupCheckBoxColor(inputobject, j, false) end })
 				row[7 + j].handlers.onClick = function () C.SetDefensibleActiveWeaponGroup(inputobject, false, j) end
 			end
-			inputtable:addEmptyRow(config.mapRowHeight / 2)
+			weaponrowgroup:addEmptyRow(config.mapRowHeight / 2)
 			-- weapons
 			for i, gun in ipairs(loadout.component.weapon) do
 				local gun = ConvertStringTo64Bit(tostring(gun))
@@ -189,8 +183,8 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 					--print("primary: " .. tostring(rawweapongroups[j].primary) .. ", idx: " .. tostring(rawweapongroups[j].idx))
 				end
 
-				local row = inputtable:addRow("info_weaponconfig" .. i, {  })
-				row[2]:createText(ffi.string(C.GetComponentName(gun)))
+				local row = weaponrowgroup:addRow("info_weaponconfig" .. i, {  })
+				row[1]:setColSpan(2):createText(ffi.string(C.GetComponentName(gun)))
 
 				-- primary weapon groups
 				for j = 1, 4 do
@@ -229,8 +223,8 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 						currentammomacro = ffi.string(C.GetCurrentAmmoOfWeapon(gun))
 					end
 
-					row = inputtable:addRow(("info_weaponconfig" .. i .. "_ammo"), {  })
-					row[2]:createText((ReadText(1001, 2800) .. ReadText(1001, 120)))	-- Ammunition, :
+					row = weaponrowgroup:addRow(("info_weaponconfig" .. i .. "_ammo"), {  })
+					row[1]:setColSpan(2):createText((ReadText(1001, 2800) .. ReadText(1001, 120)))	-- Ammunition, :
 					row[3]:setColSpan(11):createDropDown(dropdowndata, {startOption = currentammomacro, active = dropdownactive})
 					row[3].handlers.onDropDownConfirmed = function(_, newammomacro) C.SetAmmoOfWeapon(gun, newammomacro) end
 				elseif pilot and IsValidComponent(pilot) and Helper.isComponentClass(classid, "bomblauncher") then
@@ -257,8 +251,8 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 						currentammomacro = ffi.string(C.GetCurrentAmmoOfWeapon(gun))
 					end
 
-					row = inputtable:addRow(("info_weaponconfig" .. i .. "_ammo"), {  })
-					row[2]:createText((ReadText(1001, 2800) .. ReadText(1001, 120)))	-- Ammunition, :
+					row = weaponrowgroup:addRow(("info_weaponconfig" .. i .. "_ammo"), {  })
+					row[1]:setColSpan(2):createText((ReadText(1001, 2800) .. ReadText(1001, 120)))	-- Ammunition, :
 					row[3]:setColSpan(11):createDropDown(dropdowndata, {startOption = currentammomacro, active = dropdownactive})
 					row[3].handlers.onDropDownConfirmed = function(_, newammomacro) C.SetAmmoOfWeapon(gun, newammomacro) end
 				end
@@ -270,46 +264,83 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		menu.turrets = {}
 		menu.turretgroups = {}
 		if isplayerowned and #loadout.component.turret > 0 then
+			local row = inputtable:addRow(false, Helper.headerRowProperties)
+			row[1]:setColSpan(13):createText(ReadText(1001, 8612), Helper.headerRowCenteredProperties) -- Turret Behaviour
+
+			local turretrowgroup = inputtable:addRowGroup({  })
+
 			local hasnormalturrets = false
 			local hasmissileturrets = false
 			local hasoperationalnormalturrets = false
 			local hasoperationalmissileturrets = false
 			local hasonlytugturrets = true
+			local turretsizecounts = {}
+			local groups = {}
+			if mode == "station" then
+				local modules = {}
+				Helper.ffiVLA(modules, "UniverseID", C.GetNumStationModules, C.GetStationModules, object64, false, false)
+				for _, module in ipairs(modules) do
+					local numslots = tonumber(C.GetNumUpgradeSlots(module, "", "turret"))
+					for j = 1, numslots do
+						local groupinfo = C.GetUpgradeSlotGroup(module, "", "turret", j)
+						if (ffi.string(groupinfo.path) == "..") and (ffi.string(groupinfo.group) == "") then
+							local current = C.GetUpgradeSlotCurrentComponent(module, "turret", j)
+							if current ~= 0 then
+								if (not hasmissileturrets) or (not hasnormalturrets) then
+									local ismissileturret = C.IsComponentClass(current, "missileturret")
+									hasmissileturrets = hasmissileturrets or ismissileturret
+									hasnormalturrets = hasnormalturrets or (not ismissileturret)
+								end
+								if not GetComponentData(ConvertStringTo64Bit(tostring(current)), "istugweapon") then
+									hasonlytugturrets = false
+								end
+								table.insert(menu.turrets, current)
+							end
+						end
+					end
 
-			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
-			row[1]:setColSpan(13):createText(ReadText(1001, 8612), Helper.headerRowCenteredProperties) -- Turret Behaviour
-			local numslots = tonumber(C.GetNumUpgradeSlots(inputobject, "", "turret"))
-			for j = 1, numslots do
-				local groupinfo = C.GetUpgradeSlotGroup(inputobject, "", "turret", j)
-				if (ffi.string(groupinfo.path) == "..") and (ffi.string(groupinfo.group) == "") then
-					local current = C.GetUpgradeSlotCurrentComponent(inputobject, "turret", j)
-					if current ~= 0 then
-						if (not hasmissileturrets) or (not hasnormalturrets) then
-							local ismissileturret = C.IsComponentClass(current, "missileturret")
-							hasmissileturrets = hasmissileturrets or ismissileturret
-							hasnormalturrets = hasnormalturrets or (not ismissileturret)
+					local n = C.GetNumUpgradeGroups(module, "")
+					local buf = ffi.new("UpgradeGroup2[?]", n)
+					n = C.GetUpgradeGroups2(buf, n, module, "")
+					for i = 0, n - 1 do
+						if (ffi.string(buf[i].path) ~= "..") or (ffi.string(buf[i].group) ~= "") then
+							table.insert(groups, { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group), module = module })
 						end
-						if not GetComponentData(ConvertStringTo64Bit(tostring(current)), "istugweapon") then
-							hasonlytugturrets = false
+					end
+				end
+			else
+				local numslots = tonumber(C.GetNumUpgradeSlots(inputobject, "", "turret"))
+				for j = 1, numslots do
+					local groupinfo = C.GetUpgradeSlotGroup(inputobject, "", "turret", j)
+					if (ffi.string(groupinfo.path) == "..") and (ffi.string(groupinfo.group) == "") then
+						local current = C.GetUpgradeSlotCurrentComponent(inputobject, "turret", j)
+						if current ~= 0 then
+							if (not hasmissileturrets) or (not hasnormalturrets) then
+								local ismissileturret = C.IsComponentClass(current, "missileturret")
+								hasmissileturrets = hasmissileturrets or ismissileturret
+								hasnormalturrets = hasnormalturrets or (not ismissileturret)
+							end
+							if not GetComponentData(ConvertStringTo64Bit(tostring(current)), "istugweapon") then
+								hasonlytugturrets = false
+							end
+							table.insert(menu.turrets, current)
 						end
-						table.insert(menu.turrets, current)
+					end
+				end
+
+				local n = C.GetNumUpgradeGroups(inputobject, "")
+				local buf = ffi.new("UpgradeGroup2[?]", n)
+				n = C.GetUpgradeGroups2(buf, n, inputobject, "")
+				for i = 0, n - 1 do
+					if (ffi.string(buf[i].path) ~= "..") or (ffi.string(buf[i].group) ~= "") then
+						table.insert(groups, { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group) })
 					end
 				end
 			end
-
-			local groups = {}
-			local turretsizecounts = {}
-			local n = C.GetNumUpgradeGroups(inputobject, "")
-			local buf = ffi.new("UpgradeGroup2[?]", n)
-			n = C.GetUpgradeGroups2(buf, n, inputobject, "")
-			for i = 0, n - 1 do
-				if (ffi.string(buf[i].path) ~= "..") or (ffi.string(buf[i].group) ~= "") then
-					table.insert(groups, { context = buf[i].contextid, path = ffi.string(buf[i].path), group = ffi.string(buf[i].group) })
-				end
-			end
 			table.sort(groups, function (a, b) return a.group < b.group end)
+
 			for _, group in ipairs(groups) do
-				local groupinfo = C.GetUpgradeGroupInfo2(inputobject, "", group.context, group.path, group.group, "turret")
+				local groupinfo = C.GetUpgradeGroupInfo2(group.module or inputobject, "", group.context, group.path, group.group, "turret")
 				if (groupinfo.count > 0) then
 					group.operational = groupinfo.operational
 					group.currentcomponent = groupinfo.currentcomponent
@@ -353,22 +384,22 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 			if (#menu.turrets > 0) or (#menu.turretgroups > 0) then
 				if mode == "ship" then
-					local row = inputtable:addRow("info_turretconfig", {  })
-					row[2]:setColSpan(3):createText(ReadText(1001, 2963))
+					local row = turretrowgroup:addRow("info_turretconfig", {  })
+					row[1]:setColSpan(4):createText(ReadText(1001, 2963))
 					row[5]:setColSpan(9):createDropDown(Helper.getTurretModes(nil, not hasonlytugturrets), { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all") end })
 					row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllTurretModes(inputobject, newturretmode) end
 					row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
-					local row = inputtable:addRow("info_turretconfig_2", {  })
+					local row = turretrowgroup:addRow("info_turretconfig_2", {  })
 					row[5]:setColSpan(9):createButton({ height = config.mapRowHeight }):setText(function () return menu.areTurretsArmed(inputobject) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 					row[5].handlers.onClick = function () return C.SetAllTurretsArmed(inputobject, not menu.areTurretsArmed(inputobject)) end
 
 					local dropdownCount = 1
 					for i, turret in ipairs(menu.turrets) do
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						turretrowgroup:addEmptyRow(config.mapRowHeight / 2)
 
-						local row = inputtable:addRow("info_turretconfig" .. i, {  })
-						row[2]:setColSpan(3):createText(ffi.string(C.GetComponentName(turret)))
+						local row = turretrowgroup:addRow("info_turretconfig" .. i, {  })
+						row[1]:setColSpan(4):createText(ffi.string(C.GetComponentName(turret)))
 						row[5]:setColSpan(9):createDropDown(Helper.getTurretModes(turret), { startOption = function () return menu.getDropDownTurretModeOption(turret) end })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetWeaponMode(turret, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
@@ -377,18 +408,18 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							inputtable.properties.maxVisibleHeight = inputtable:getFullHeight()
 						end
 
-						local row = inputtable:addRow("info_turretconfig" .. i .. "_2", {  })
+						local row = turretrowgroup:addRow("info_turretconfig" .. i .. "_2", {  })
 						row[5]:setColSpan(9):createButton({ height = config.mapRowHeight }):setText(function () return C.IsWeaponArmed(turret) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 						row[5].handlers.onClick = function () return C.SetWeaponArmed(turret, not C.IsWeaponArmed(turret)) end
 					end
 
 					for i, group in ipairs(menu.turretgroups) do
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						turretrowgroup:addEmptyRow(config.mapRowHeight / 2)
 
 						local name = ReadText(1001, 8023) .. " " .. Helper.getSlotSizeText(group.slotsize) .. group.sizecount .. ((group.currentmacro ~= "") and (" (" .. Helper.getSlotSizeText(group.slotsize) .. " " .. GetMacroData(group.currentmacro, "shortname") .. ")") or "")
 
-						local row = inputtable:addRow("info_turretgroupconfig" .. i, {  })
-						row[2]:setColSpan(3):createText(name, { color = (group.operational > 0) and Color["text_normal"] or Color["text_error"] })
+						local row = turretrowgroup:addRow("info_turretgroupconfig" .. i, {  })
+						row[1]:setColSpan(4):createText(name, { color = (group.operational > 0) and Color["text_normal"] or Color["text_error"] })
 						row[5]:setColSpan(9):createDropDown(Helper.getTurretModes(group.currentcomponent), { startOption = function () return menu.getDropDownTurretModeOption(inputobject, group.context, group.path, group.group) end, active = group.operational > 0 })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetTurretGroupMode2(inputobject, group.context, group.path, group.group, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
@@ -397,7 +428,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							inputtable.properties.maxVisibleHeight = inputtable:getFullHeight()
 						end
 
-						local row = inputtable:addRow("info_turretgroupconfig" .. i .. "_2", {  })
+						local row = turretrowgroup:addRow("info_turretgroupconfig" .. i .. "_2", {  })
 						row[5]:setColSpan(9):createButton({ height = config.mapRowHeight }):setText(function () return C.IsTurretGroupArmed(inputobject, group.context, group.path, group.group) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 						row[5].handlers.onClick = function () return C.SetTurretGroupArmed(inputobject, group.context, group.path, group.group, not C.IsTurretGroupArmed(inputobject, group.context, group.path, group.group)) end
 					end
@@ -415,25 +446,25 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 					if hasnormalturrets then
 						-- non-missile
-						local row = inputtable:addRow("info_turretconfig", {  })
-						row[2]:setColSpan(3):createText(ReadText(1001, 8397))
+						local row = turretrowgroup:addRow("info_turretconfig", {  })
+						row[1]:setColSpan(4):createText(ReadText(1001, 8397))
 						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all", false) end, active = hasoperationalnormalturrets, mouseOverText = (not hasoperationalnormalturrets) and ReadText(1026, 3235) or nil })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllNonMissileTurretModes(inputobject, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
-						local row = inputtable:addRow("info_turretconfig_2", {  })
+						local row = turretrowgroup:addRow("info_turretconfig_2", {  })
 						row[5]:setColSpan(9):createButton({ height = config.mapRowHeight }):setText(function () return menu.areTurretsArmed(inputobject, false) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 						row[5].handlers.onClick = function () return C.SetAllNonMissileTurretsArmed(inputobject, not menu.areTurretsArmed(inputobject, false)) end
 					end
 					if hasmissileturrets then
 						-- missile
-						local row = inputtable:addRow("info_turretconfig_missile", {  })
-						row[2]:setColSpan(3):createText(ReadText(1001, 9031))
+						local row = turretrowgroup:addRow("info_turretconfig_missile", {  })
+						row[1]:setColSpan(4):createText(ReadText(1001, 9031))
 						row[5]:setColSpan(9):createDropDown(turretmodes, { startOption = function () return menu.getDropDownTurretModeOption(inputobject, "all", true) end, active = hasoperationalmissileturrets, mouseOverText = (not hasoperationalnormalturrets) and ReadText(1026, 3235) or nil })
 						row[5].handlers.onDropDownConfirmed = function(_, newturretmode) menu.noupdate = false; C.SetAllMissileTurretModes(inputobject, newturretmode) end
 						row[5].handlers.onDropDownActivated = function () menu.noupdate = true end
 
-						local row = inputtable:addRow("info_turretconfig_missile_2", {  })
+						local row = turretrowgroup:addRow("info_turretconfig_missile_2", {  })
 						row[5]:setColSpan(9):createButton({ height = config.mapRowHeight }):setText(function () return menu.areTurretsArmed(inputobject, true) and ReadText(1001, 8631) or ReadText(1001, 8632) end, { halign = "center" })
 						row[5].handlers.onClick = function () return C.SetAllMissileTurretsArmed(inputobject, not menu.areTurretsArmed(inputobject, true)) end
 					end
@@ -486,26 +517,28 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		end
 		if unitstoragetable.capacity > 0 then
 			-- title
-			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+			local row = inputtable:addRow(false, Helper.headerRowProperties)
 			row[1]:setColSpan(13):createText(ReadText(1001, 8619), Helper.headerRowCenteredProperties)
+
+			local dronerowgroup = inputtable:addRowGroup({  })
 			-- capcity
-			local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-			row[2]:createText(ReadText(1001, 8393))
+			local row = dronerowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+			row[1]:setColSpan(2):createText(ReadText(1001, 8393))
 			row[8]:setColSpan(6):createText(locunitcount .. " / " .. locunitcapacity, { halign = "right" })
 			-- drones
 			if unitinfo_details then
 				for i, entry in ipairs(menu.drones) do
 					if i ~= 1 then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						dronerowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					local hasmodes = (mode == "ship") and entry.current
 					-- drone name, amount and mode
-					local row1 = inputtable:addRow("drone_config", {  })
-					row1[2]:createText(entry.name)
+					local row1 = dronerowgroup:addRow("drone_config", {  })
+					row1[1]:setColSpan(2):createText(entry.name)
 					row1[3]:setColSpan(isplayerowned and 2 or 11):createText(function () return Helper.unlockInfo(unitinfo_amount, C.GetNumStoredUnits(inputobject, entry.type, false)) end, { halign = isplayerowned and "left" or "right" })
 					-- active and armed status
-					local row2 = inputtable:addRow("drone_config", {  })
-					row2[2]:createText("    " .. ReadText(1001, 11229), { color = hasmodes and function () return C.IsDroneTypeArmed(inputobject, entry.type) and Color["text_normal"] or Color["text_inactive"] end or nil })
+					local row2 = dronerowgroup:addRow("drone_config", {  })
+					row2[1]:setColSpan(2):createText("    " .. ReadText(1001, 11229), { color = hasmodes and function () return C.IsDroneTypeArmed(inputobject, entry.type) and Color["text_normal"] or Color["text_inactive"] end or nil })
 					row2[3]:setColSpan(isplayerowned and 2 or 11):createText(function () return Helper.unlockInfo(unitinfo_amount, C.GetNumUnavailableUnits(inputobject, entry.type)) end, { halign = isplayerowned and "left" or "right", color = hasmodes and function () return C.IsDroneTypeBlocked(inputobject, entry.type) and Color["text_warning"] or (C.IsDroneTypeArmed(inputobject, entry.type) and Color["text_normal"] or Color["text_inactive"]) end or nil })
 
 					-- drone mode support - disabled for mining drones, to avoid conflicts with order defined drone behaviour
@@ -561,9 +594,10 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 				if #subordinates > 0 then
 					-- title
-					local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+					local row = inputtable:addRow(false, Helper.headerRowProperties)
 					row[1]:setColSpan(13):createText(ReadText(1001, 8626), Helper.headerRowCenteredProperties)
 
+					local subordinaterowgroup = inputtable:addRowGroup({  })
 					local isstation = Helper.isComponentClass(classid, "station")
 					for i = 1, isstation and 5 or 10 do
 						if groups[i] then
@@ -630,13 +664,13 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 								mouseovertext = ReadText(1026, 8605)
 							end
 
-							local row = inputtable:addRow("subordinate_config", {  })
-							row[2]:createText(function () menu.updateSubordinateGroupInfo(inputobject); return ReadText(20401, i) .. (menu.subordinategroups[i] and (" (" .. ((not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) and ((#menu.subordinategroups[i].subordinates - menu.subordinategroups[i].numdockedatcommander) .. "/") or "") .. #menu.subordinategroups[i].subordinates ..")") or "") end, { color = isblocked and Color["text_warning"] or nil })
+							local row = subordinaterowgroup:addRow("subordinate_config", {  })
+							row[1]:setColSpan(2):createText(function () menu.updateSubordinateGroupInfo(inputobject); return ReadText(20401, i) .. (menu.subordinategroups[i] and (" (" .. ((not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) and ((#menu.subordinategroups[i].subordinates - menu.subordinategroups[i].numdockedatcommander) .. "/") or "") .. #menu.subordinategroups[i].subordinates ..")") or "") end, { color = isblocked and Color["text_warning"] or nil })
 							row[3]:setColSpan(11):createDropDown(subordinateassignments, { startOption = function () menu.updateSubordinateGroupInfo(inputobject); return menu.subordinategroups[i] and menu.subordinategroups[i].assignment or "" end })
 							row[3].handlers.onDropDownActivated = function () menu.noupdate = true end
 							row[3].handlers.onDropDownConfirmed = function(_, newassignment) return Helper.dropdownAssignment(_, nil, i, inputobject, newassignment) end
-							local row = inputtable:addRow("subordinate_config", {  })
-							
+							local row = subordinaterowgroup:addRow("subordinate_config", {  })
+
 							-- Runekn's Docking Options edits begin here --
 							-- This has been replaced
 							--row[3]:setColSpan(11):createButton({ active = active, mouseOverText = mouseovertext, height = config.mapRowHeight }):setText(function () return C.ShouldSubordinateGroupDockAtCommander(inputobject, i) and ReadText(1001, 8630) or ReadText(1001, 8629) end, { halign = "center" })
@@ -665,17 +699,19 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		local locnummissiles = Helper.unlockInfo(defenceinfo_high, tostring(totalnummissiles))
 		if totalnummissiles > 0 then
 			-- title
-			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+			local row = inputtable:addRow(false, Helper.headerRowProperties)
 			row[1]:setColSpan(13):createText(ReadText(1001, 2800), Helper.headerRowCenteredProperties) -- Ammunition
+
+			local ammorowgroup = inputtable:addRowGroup({  })
 			-- capcity
-			local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-			row[2]:createText(ReadText(1001, 8393))
+			local row = ammorowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+			row[1]:setColSpan(2):createText(ReadText(1001, 8393))
 			row[8]:setColSpan(6):createText(locnummissiles .. " / " .. locmissilecapacity, { halign = "right" })
 			if defenceinfo_high then
 				for i = 0, nummissiletypes - 1 do
 					local macro = ffi.string(missilestoragetable[i].macro)
-					local row = inputtable:addRow({ "info_weapons", macro, inputobject }, {  })
-					row[2]:createText(GetMacroData(macro, "name"))
+					local row = ammorowgroup:addRow({ "info_weapons", macro, inputobject }, {  })
+					row[1]:setColSpan(2):createText(GetMacroData(macro, "name"))
 					row[8]:setColSpan(6):createText(tostring(missilestoragetable[i].amount), { halign = "right" })
 				end
 			end
@@ -695,16 +731,18 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		local locnumcountermeasures = Helper.unlockInfo(defenceinfo_high, tostring(totalnumcountermeasures))
 		if totalnumcountermeasures > 0 then
 			-- title
-			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+			local row = inputtable:addRow(false, Helper.headerRowProperties)
 			row[1]:setColSpan(13):createText(ReadText(20215, 1701), Helper.headerRowCenteredProperties) -- Countermeasures
+
+			local countermeasurerowgroup = inputtable:addRowGroup({  })
 			-- capcity
-			local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-			row[2]:createText(ReadText(1001, 8393))
+			local row = countermeasurerowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+			row[1]:setColSpan(2):createText(ReadText(1001, 8393))
 			row[8]:setColSpan(6):createText(locnumcountermeasures .. " / " .. loccountermeasurecapacity, { halign = "right" })
 			if defenceinfo_high then
 				for i = 0, numcountermeasuretypes - 1 do
-					local row = inputtable:addRow(true, { interactive = false })
-					row[2]:createText(GetMacroData(ffi.string(countermeasurestoragetable[i].macro), "name"))
+					local row = countermeasurerowgroup:addRow(true, { interactive = false })
+					row[1]:setColSpan(2):createText(GetMacroData(ffi.string(countermeasurestoragetable[i].macro), "name"))
 					row[8]:setColSpan(6):createText(tostring(countermeasurestoragetable[i].amount), { halign = "right" })
 				end
 			end
@@ -734,25 +772,27 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 		local printeddeployablecapacity = Helper.unlockInfo(defenceinfo_low, tostring(deployablecapacity))
 		if totalnumdeployables > 0 then
 			-- title
-			local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+			local row = inputtable:addRow(false, Helper.headerRowProperties)
 			row[1]:setColSpan(13):createText(ReadText(1001, 1332), Helper.headerRowCenteredProperties) -- Deployables
+
+			local deploayablerowgroup = inputtable:addRowGroup({  })
 			-- capcity
-			local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-			row[2]:createText(ReadText(1001, 8393))
+			local row = deploayablerowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+			row[1]:setColSpan(2):createText(ReadText(1001, 8393))
 			row[8]:setColSpan(6):createText(printednumdeployables .. " / " .. printeddeployablecapacity, { halign = "right" })
 			if defenceinfo_high then
 				for _, entry in ipairs(consumables) do
 					if #consumabledata[entry.id] > 0 then
 						for _, data in ipairs(consumabledata[entry.id]) do
-							local row = inputtable:addRow({ "info_deploy", data.macro, inputobject }, {  })
-							row[2]:createText(data.name)
+							local row = deploayablerowgroup:addRow({ "info_deploy", data.macro, inputobject }, {  })
+							row[1]:setColSpan(2):createText(data.name)
 							row[8]:setColSpan(6):createText(data.amount, { halign = "right" })
 						end
 					end
 				end
 				if isplayerowned then
 					-- deploy
-					local row = inputtable:addRow("info_deploy", {  })
+					local row = deploayablerowgroup:addRow("info_deploy", {  })
 					row[3]:setColSpan(11):createButton({ height = config.mapRowHeight, active = function () return next(menu.infoTablePersistentData[instance].macrostolaunch) ~= nil end }):setText(ReadText(1001, 8390), { halign = "center" })
 					row[3].handlers.onClick = function () return menu.buttonDeploy(instance) end
 				end
@@ -765,14 +805,16 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 			if defenceinfo_high then
 				local hasshown = false
 				-- title
-				local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+				local row = inputtable:addRow(false, Helper.headerRowProperties)
 				row[1]:setColSpan(13):createText(ReadText(1001, 9413), Helper.headerRowCenteredProperties) -- Loadout
-				local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-				row[2]:setColSpan(5):createText(ReadText(1001, 7935), { font = Helper.standardFontBold })
+
+				local loadoutrowgroup = inputtable:addRowGroup({  })
+				local row = loadoutrowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+				row[1]:setColSpan(6):createText(ReadText(1001, 7935), { font = Helper.standardFontBold })
 				row[7]:setColSpan(4):createText(ReadText(1001, 1311), { font = Helper.standardFontBold, halign = "right" })
 				row[11]:setColSpan(3):createText(ReadText(1001, 12), { font = Helper.standardFontBold, halign = "right" })
 
-				inputtable:addEmptyRow(config.mapRowHeight / 2)
+				loadoutrowgroup:addEmptyRow(config.mapRowHeight / 2)
 
 				local macroequipment = {
 					{ type = "weapon", encyclopedia = "info_weapon" },
@@ -783,13 +825,13 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 				for _, entry in ipairs(macroequipment) do
 					if #loadout.component[entry.type] > 0 then
 						if hasshown then
-							inputtable:addEmptyRow(config.mapRowHeight / 2)
+							loadoutrowgroup:addEmptyRow(config.mapRowHeight / 2)
 						end
 						hasshown = true
 						local locmacros = menu.infoCombineLoadoutComponents(loadout.component[entry.type])
 						for macro, data in pairs(locmacros) do
-							local row = inputtable:addRow({ entry.encyclopedia, macro, inputobject }, {  })
-							row[2]:setColSpan(5):createText(GetMacroData(macro, "name"))
+							local row = loadoutrowgroup:addRow({ entry.encyclopedia, macro, inputobject }, {  })
+							row[1]:setColSpan(6):createText(GetMacroData(macro, "name"))
 							row[7]:setColSpan(4):createText(data.count .. " / " .. data.count + data.construction + data.wreck, { halign = "right" })
 							local shieldpercent = data.shieldpercent
 							local hullpercent = data.hullpercent
@@ -806,60 +848,62 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 
 				if #loadout.macro.thruster > 0 then
 					if hasshown then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						loadoutrowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					hasshown = true
 					-- ships normally only have 1 set of thrusters. in case a ship has more, this will list all of them.
 					for i, val in ipairs(loadout.macro.thruster) do
-						local row = inputtable:addRow({ "info_equipment", macro, inputobject }, {  })
-						row[2]:setColSpan(12):createText(GetMacroData(val, "name"))
+						local row = loadoutrowgroup:addRow({ "info_equipment", macro, inputobject }, {  })
+						row[1]:setColSpan(13):createText(GetMacroData(val, "name"))
 
 						AddKnownItem(GetMacroData(val, "infolibrary"), val)
 					end
 				end
 				if #loadout.ware.software > 0 then
 					if hasshown then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						loadoutrowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					hasshown = true
 					for i, val in ipairs(loadout.ware.software) do
-						local row = inputtable:addRow({ "info_software", val, inputobject }, {  })
-						row[2]:setColSpan(12):createText(GetWareData(val, "name"))
+						local row = loadoutrowgroup:addRow({ "info_software", val, inputobject }, {  })
+						row[1]:setColSpan(13):createText(GetWareData(val, "name"))
 
 						AddKnownItem("software", val)
 					end
 				end
 			else
 				local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-				row[2]:setColSpan(12):createText(ReadText(1001, 3210))
+				row[1]:setColSpan(13):createText(ReadText(1001, 3210))
 			end
 		end
 	end
 	if mode == "ship" then
 		-- mods
 		-- title
-		local row = inputtable:addRow(false, { bgColor = Color["row_title_background"] })
+		local row = inputtable:addRow(false, Helper.headerRowProperties)
 		row[1]:setColSpan(13):createText(ReadText(1001, 8031), Helper.headerRowCenteredProperties)
+
+		local modrowgroup = inputtable:addRowGroup({  })
 		if equipment_mods and GetComponentData(object64, "hasanymod") then
 			local hasshown = false
 			-- chassis
 			local hasinstalledmod, installedmod = Helper.getInstalledModInfo("ship", inputobject)
 			if hasinstalledmod then
 				if hasshown then
-					inputtable:addEmptyRow(config.mapRowHeight / 2)
+					modrowgroup:addEmptyRow(config.mapRowHeight / 2)
 				end
 				hasshown = true
-				row = menu.addEquipmentModInfoRow(inputtable, "ship", installedmod, ReadText(1001, 8008))
+				row = menu.addEquipmentModInfoRow(inputtable, modrowgroup, "ship", installedmod, ReadText(1001, 8008))
 			end
 			-- weapon
 			for i, weapon in ipairs(loadout.component.weapon) do
 				local hasinstalledmod, installedmod = Helper.getInstalledModInfo("weapon", weapon)
 				if hasinstalledmod then
 					if hasshown then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						modrowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					hasshown = true
-					row = menu.addEquipmentModInfoRow(inputtable, "weapon", installedmod, ffi.string(C.GetComponentName(weapon)))
+					row = menu.addEquipmentModInfoRow(inputtable, modrowgroup, "weapon", installedmod, ffi.string(C.GetComponentName(weapon)))
 				end
 			end
 			-- turret
@@ -867,22 +911,22 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 				local hasinstalledmod, installedmod = Helper.getInstalledModInfo("turret", inputobject, group.context, group.group, true)
 				if hasinstalledmod then
 					if hasshown then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						modrowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					hasshown = true
 
 					local name = ReadText(1001, 8023) .. " " .. Helper.getSlotSizeText(group.slotsize) .. group.sizecount .. ((group.currentmacro ~= "") and (" (" .. Helper.getSlotSizeText(group.slotsize) .. " " .. GetMacroData(group.currentmacro, "shortname") .. ")") or "")
-					row = menu.addEquipmentModInfoRow(inputtable, "weapon", installedmod, name)
+					row = menu.addEquipmentModInfoRow(inputtable, modrowgroup, "weapon", installedmod, name)
 				end
 			end
 			for i, turret in ipairs(menu.turrets) do
 				local hasinstalledmod, installedmod = Helper.getInstalledModInfo("turret", turret)
 				if hasinstalledmod then
 					if hasshown then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						modrowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					hasshown = true
-					row = menu.addEquipmentModInfoRow(inputtable, "weapon", installedmod, ffi.string(C.GetComponentName(turret)))
+					row = menu.addEquipmentModInfoRow(inputtable, modrowgroup, "weapon", installedmod, ffi.string(C.GetComponentName(turret)))
 				end
 			end
 			-- shield
@@ -915,29 +959,31 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 						name = ReadText(1001, 8044)
 					end
 					if hasshown then
-						inputtable:addEmptyRow(config.mapRowHeight / 2)
+						modrowgroup:addEmptyRow(config.mapRowHeight / 2)
 					end
 					hasshown = true
-					row = menu.addEquipmentModInfoRow(inputtable, "shield", installedmod, name)
+					row = menu.addEquipmentModInfoRow(inputtable, modrowgroup, "shield", installedmod, name)
 				end
 			end
 			-- engine
 			local hasinstalledmod, installedmod = Helper.getInstalledModInfo("engine", inputobject)
 			if hasinstalledmod then
 				if hasshown then
-					inputtable:addEmptyRow(config.mapRowHeight / 2)
+					modrowgroup:addEmptyRow(config.mapRowHeight / 2)
 				end
 				hasshown = true
-				row = menu.addEquipmentModInfoRow(inputtable, "engine", installedmod, ffi.string(C.GetComponentName(loadout.component.engine[1])))
+				row = menu.addEquipmentModInfoRow(inputtable, modrowgroup, "engine", installedmod, ffi.string(C.GetComponentName(loadout.component.engine[1])))
 			end
 		else
-			local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-			row[2]:setColSpan(12):createText(Helper.unlockInfo(equipment_mods, ReadText(1001, 8394)))
+			local row = modrowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+			row[1]:setColSpan(13):createText(Helper.unlockInfo(equipment_mods, ReadText(1001, 8394)))
 		end
 	end
 	if mode == "none" then
-		local row = inputtable:addRow(false, { bgColor = Color["row_background_unselectable"] })
-		row[2]:setColSpan(12):createText(ReadText(1001, 6526))
+		local generalrowgroup = inputtable:addRowGroup({  })
+
+		local row = generalrowgroup:addRow(false, { bgColor = Color["row_background_unselectable"] })
+		row[1]:setColSpan(13):createText(ReadText(1001, 6526))
 	end
 end
 
@@ -951,12 +997,19 @@ function do_menu.display()
 	local xoffset = 0
 	local yoffset = 0
 
-	menu.frame = Helper.createFrameHandle(menu, { width = width, x = xoffset, y = yoffset, standardButtons = (((menu.mode == "docked") and (menu.currentplayership ~= 0)) or menu.secondarycontrolpost) and {} or { close = true, back = true }, showTickerPermanently = true })
+	menu.frame = Helper.createFrameHandle(menu, {
+		width = width,
+		x = xoffset,
+		y = yoffset,
+		standardButtons = (((menu.mode == "docked") and (menu.currentplayership ~= 0)) or menu.secondarycontrolpost) and {} or { close = true, back = true },
+		showTickerPermanently = true,
+		blurBackground = false,
+	})
 	menu.frame:setBackground("solid", { color = Color["frame_background_semitransparent"] })
 
 	menu.createTopLevel(menu.frame)
 
-	local table_topleft, table_header, table_button, row
+	local table_header, table_button, row
 
 	local isdocked = (menu.currentplayership ~= 0) and GetComponentData(menu.currentplayership, "isdocked")
 	local ownericon, owner, shiptrader, isdock, canbuildships, isplayerowned, issupplyship, canhavetradeoffers, aipilot = GetComponentData(menu.currentcontainer, "ownericon", "owner", "shiptrader", "isdock", "canbuildships", "isplayerowned", "issupplyship", "canhavetradeoffers", "aipilot")
@@ -994,17 +1047,9 @@ function do_menu.display()
 	local istimelineshub = ffi.string(C.GetGameStartName()) == "x4ep1_gamestart_hub"
 	--print("cantrade: " .. tostring(cantrade) .. ", canbuyship: " .. tostring(canbuyship) .. ", canmodifyship: " .. tostring(canmodifyship))
 
-	width = (width / 3) - Helper.borderSize
+	width = math.max(Helper.scaleX(600), (width / 3) - Helper.borderSize)
 
-	-- set up a new table
-	table_topleft = menu.frame:addTable(1, { tabOrder = 0, width = Helper.playerInfoConfig.width, height = Helper.playerInfoConfig.height, x = Helper.playerInfoConfig.offsetX, y = Helper.playerInfoConfig.offsetY, scaling = false })
-
-	row = table_topleft:addRow(false, { fixed = true, bgColor = Color["player_info_background"] })
-	local icon = row[1]:createIcon(function () local logo = C.GetCurrentPlayerLogo(); return ffi.string(logo.icon) end, { width = Helper.playerInfoConfig.height, height = Helper.playerInfoConfig.height, color = Helper.getPlayerLogoColor })
-
-	local textheight = math.ceil(C.GetTextHeight(Helper.playerInfoConfigTextLeft(), Helper.standardFont, Helper.playerInfoConfig.fontsize, Helper.playerInfoConfig.width - Helper.playerInfoConfig.height - Helper.borderSize))
-	icon:setText(Helper.playerInfoConfigTextLeft,	{ fontsize = Helper.playerInfoConfig.fontsize, halign = "left",  x = Helper.playerInfoConfig.height + Helper.borderSize, y = (Helper.playerInfoConfig.height - textheight) / 2 })
-	icon:setText2(Helper.playerInfoConfigTextRight,	{ fontsize = Helper.playerInfoConfig.fontsize, halign = "right", x = Helper.borderSize,          y = (Helper.playerInfoConfig.height - textheight) / 2 })
+	Helper.createPlayerInfo(menu, menu.frame, Helper.playerInfoConfig.cornerTableWidth, Helper.playerInfoConfig.height, Helper.playerInfoConfig.offsetX, Helper.playerInfoConfig.offsetY)
 
 	local xoffset = (Helper.viewWidth - width) / 2
 	local yoffset = 25
@@ -1157,7 +1202,7 @@ function do_menu.display()
 			mouseOverText = mouseovertext,
 		}):setTextProperties(active and config.activeButtonTextProperties or config.inactiveButtonTextProperties):setText2Properties(active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- Deploy Civilian
 		row[1].properties.text2.halign = "right"
-		row[1].properties.text2.x = Helper.standardTextOffsetx
+		row[1].properties.text2.x = 0
 		if active then
 			row[1].handlers.onDropDownConfirmed = menu.dropdownDeploy
 		end
@@ -1181,7 +1226,7 @@ function do_menu.display()
 			mouseOverText = mouseovertext,
 		}):setTextProperties(active and config.activeButtonTextProperties or config.inactiveButtonTextProperties):setText2Properties(active and config.activeButtonTextProperties or config.inactiveButtonTextProperties)	-- Deploy Military
 		row[7].properties.text2.halign = "right"
-		row[7].properties.text2.x = Helper.standardTextOffsetx
+		row[7].properties.text2.x = 0
 		if active then
 			row[7].handlers.onDropDownConfirmed = menu.dropdownDeploy
 		end
@@ -1192,7 +1237,7 @@ function do_menu.display()
 		if active then
 			row[1].handlers.onClick = menu.buttonFlightAssist
 		end
-		row[2]:createButton({ bgColor = menu.dockButtonBGColor, highlightColor = menu.dockButtonHighlightColor, helpOverlayID = "docked_dock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1001, 8605), { halign = "center", color = menu.dockButtonTextColor })	-- "Dock"
+		row[2]:createButton({ bgColor = menu.dockButtonBGColor, highlightColor = menu.dockButtonHighlightColor, borderColor = menu.dockButtonBorderColor, helpOverlayID = "docked_dock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1001, 8605), { halign = "center", color = menu.dockButtonTextColor })	-- "Dock"
 		row[2].properties.mouseOverText = GetLocalizedKeyName("action", 175)
 		row[2].handlers.onClick = menu.buttonDock
 		local active = (menu.currentplayership ~= 0) and C.ToggleAutoPilot(true)
@@ -1210,7 +1255,7 @@ function do_menu.display()
 				local buf = ffi.new("ShipStanceInfo[?]", numstances)
 				numstances = C.GetShipStances(buf, numstances, menu.currentplayership)
 				for i = 0, numstances - 1 do
-					table.insert(stanceoptions, { id = ffi.string(buf[i].id), text = "\27[" .. ffi.string(buf[i].iconid) .. "] " .. ffi.string(buf[i].name), text2 = "", icon = "", displayremoveoption = false })
+					table.insert(stanceoptions, { id = ffi.string(buf[i].id), text = "\27[" .. ffi.string(buf[i].iconid) .. "] " .. ffi.string(buf[i].name), text2 = "", icon = "", displayremoveoption = false, mouseovertext = ffi.string(buf[i].description) })
 				end
 				if ffi.string(C.GetShipDefaultStance(menu.currentplayership)) == "" then -- sic! If the default stance doesn't exist, we need to add a neutral option
 					table.insert(stanceoptions, 1, { id = "neutral", text = "\27[stance_neutral] " .. ReadText(1001, 8644), text2 = "", icon = "", displayremoveoption = false })
@@ -1219,7 +1264,7 @@ function do_menu.display()
 				local row = table_header:addRow(true, { bgColor = Color["row_background_unselectable"] })
 				row[1]:setColSpan(6):createText(ReadText(1001, 8642))
 				row[7]:createDropDown(stanceoptions, { active = function () return C.CanShipSwitchStance(menu.currentplayership) end, startOption = function () local activestance = ffi.string(C.GetShipActiveStance(menu.currentplayership)); return (activestance == "") and "neutral" or activestance end, mouseOverText = function () return (not C.CanShipSwitchStance(menu.currentplayership)) and ReadText(1026, 8612) or "" end })
-				row[7].handlers.onDropDownConfirmed = function (_, id) return C.SetShipStance(menu.currentplayership, id) end
+				row[7].handlers.onDropDownConfirmed = function (_, id) if (id ~= ffi.string(C.GetShipActiveStance(menu.currentplayership))) then return C.SetShipStance(menu.currentplayership, id) end end
 			end
 			
 			-- cover button
@@ -1231,7 +1276,7 @@ function do_menu.display()
 			if coverfaction ~= "" then
 				-- story case
 				local row = table_header:addRow(true, { bgColor = Color["row_background_unselectable"] })
-				row[1]:setColSpan(6):createText(ReadText(1001, 8643))
+				row[1]:setColSpan(6):createText(ReadText(1001, 8643), { y = Helper.standardTextToButtonPadding })
 
 				local mouseovertext = ReadText(1026, 8611) .. ReadText(1001, 120) .. " " .. ColorText["licence"] .. GetFactionData(coverfaction, "name") .. "\27X"
 				local shortcut = GetLocalizedKeyName("action", 377)
@@ -1801,7 +1846,7 @@ function do_menu.display()
 		end
 		if not istimelineshub then
 			if menu.currentplayership ~= 0 then
-				row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), bgColor = menu.undockButtonBGColor, highlightColor = menu.undockButtonHighlightColor, helpOverlayID = "docked_undock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1002, 20013), { halign = "center", color = menu.undockButtonTextColor })	-- "Undock"
+				row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), bgColor = menu.undockButtonBGColor, highlightColor = menu.undockButtonHighlightColor, borderColor = menu.undockButtonBorderColor, helpOverlayID = "docked_undock", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1002, 20013), { halign = "center", color = menu.undockButtonTextColor })	-- "Undock"
 				row[2].handlers.onClick = menu.buttonUndock
 			else
 				row[2]:createButton({ mouseOverText = GetLocalizedKeyName("action", 175), helpOverlayID = "docked_gotoship", helpOverlayText = " ", helpOverlayHighlightOnly = true }):setText(ReadText(1001, 7305), { halign = "center" })	-- "Go to Ship"
