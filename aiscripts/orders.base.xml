@@ -18,7 +18,7 @@
                 </do_else>
             </do_elseif>
 
-            <do_if value="not $object.allcommanders.indexof.{$parkingcontainer} and $object.parkedat">
+            <do_if value="this.assignedcontrolled.iscapitalship or not $object.allcommanders.indexof.{$parkingcontainer}">
                 <set_value name="$undock"/>
             </do_if>
             <remove_value name="$parkingcontainer"/>
