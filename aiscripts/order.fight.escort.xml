@@ -137,6 +137,7 @@
 
 	<!--
 		Here we replace the $iscarrier assignment. We simply add another condition; if subordinate group is 'reactive' then true.
+		<replace> has to be the last diff element.
 	-->
 	<replace sel="//aiscript/init/set_value[@name='$iscarrierbased']">
 		<do_if value="true"> <!-- ProcessDiff complains if <replace> contains more than one tag -->

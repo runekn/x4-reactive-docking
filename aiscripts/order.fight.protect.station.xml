@@ -79,6 +79,9 @@
             <!-- Try to dock at carrier -->
             <do_if value="not $cannotdock">
                 <do_if value="$reactive_active">
+                    <do_if value="this.order.id == 'Attack' or (this.ship.lastattacker or player.age - this.ship.lastshothit lt 10s) or (this.ship.commander and (this.ship.commander.lastattacker or player.age - this.ship.commander.lastshothit lt 10s))">
+                        <debug_text text="'%s %s started docking despite being under attack!'.[this.assignedcontrolled.idcode, this.assignedcontrolled.knownname]" chance="$debugchance"/>
+                    </do_if>
                     <find_dockingbay object="$station" name="$dock">
                         <match_dock size="this.ship.docksize" trading="false" building="false" allowplayeronly="false" ventureplatform="null" ventureronly="false" storage="false"/>
                         <match_relation_to object="this.ship" comparison="not" relation="enemy"/>
