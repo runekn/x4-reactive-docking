@@ -616,6 +616,8 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							end
 
 							if isstation then
+								local prospectactive = (not usedassignments["prospect"]) or (usedassignments["prospect"] == i)
+								table.insert(subordinateassignments, { id = "prospect", text = ReadText(20208, 41701), icon = "", displayremoveoption = false, active = prospectactive, mouseovertext = prospectactive and "" or ReadText(1026, 7840) })
 								local miningactive = (groups[i].numassignableminingships == #groups[i].subordinates) and ((not usedassignments["mining"]) or (usedassignments["mining"] == i))
 								table.insert(subordinateassignments, { id = "mining", text = ReadText(20208, 40201), icon = "", displayremoveoption = false, active = miningactive, mouseovertext = miningactive and "" or ReadText(1026, 8602) })
 								local tradeactive = ((not usedassignments["trade"]) or (usedassignments["trade"] == i))
@@ -668,7 +670,7 @@ function do_menu.setupLoadoutInfoSubmenuRows(mode, inputtable, inputobject, inst
 							row[1]:setColSpan(2):createText(function () menu.updateSubordinateGroupInfo(inputobject); return ReadText(20401, i) .. (menu.subordinategroups[i] and (" (" .. ((not C.ShouldSubordinateGroupDockAtCommander(inputobject, i)) and ((#menu.subordinategroups[i].subordinates - menu.subordinategroups[i].numdockedatcommander) .. "/") or "") .. #menu.subordinategroups[i].subordinates ..")") or "") end, { color = isblocked and Color["text_warning"] or nil })
 							row[3]:setColSpan(11):createDropDown(subordinateassignments, { startOption = function () menu.updateSubordinateGroupInfo(inputobject); return menu.subordinategroups[i] and menu.subordinategroups[i].assignment or "" end })
 							row[3].handlers.onDropDownActivated = function () menu.noupdate = true end
-							row[3].handlers.onDropDownConfirmed = function(_, newassignment) return Helper.dropdownAssignment(_, nil, i, inputobject, newassignment) end
+							row[3].handlers.onDropDownConfirmed = function(_, newassignment) return Helper.dropdownAssignment(menu, nil, i, inputobject, newassignment, menu.refreshInfoFrame) end
 							local row = subordinaterowgroup:addRow("subordinate_config", {  })
 
 							-- Runekn's Docking Options edits begin here --
@@ -1651,6 +1653,8 @@ function do_menu.display()
 
 						local isstation = C.IsComponentClass(menu.currentplayership, "station")
 						if isstation then
+							local prospectactive = (not usedassignments["prospect"]) or (usedassignments["prospect"] == i)
+							table.insert(subordinateassignments, { id = "prospect", text = ReadText(20208, 41701), icon = "", displayremoveoption = false, active = prospectactive, mouseovertext = prospectactive and "" or ReadText(1026, 7840) })
 							local miningactive = (groups[i].numassignableminingships == #groups[i].subordinates) and ((not usedassignments["mining"]) or (usedassignments["mining"] == i))
 							table.insert(subordinateassignments, { id = "mining", text = ReadText(20208, 40201), icon = "", displayremoveoption = false, active = miningactive, mouseovertext = miningactive and "" or ReadText(1026, 8602) })
 							local tradeactive = (not usedassignments["trade"]) or (usedassignments["trade"] == i)
@@ -1712,7 +1716,7 @@ function do_menu.display()
 						local row = table_header:addRow("subordinate_config", {  })
 						row[1]:createText(function () menu.updateSubordinateGroupInfo(); return ReadText(20401, i) .. (menu.subordinategroups[i] and (" (" .. ((not C.ShouldSubordinateGroupDockAtCommander(menu.currentplayership, i)) and ((#menu.subordinategroups[i].subordinates - menu.subordinategroups[i].numdockedatcommander) .. "/") or "") .. #menu.subordinategroups[i].subordinates ..")") or "") end, { color = isblocked and Color["text_warning"] or nil })
 						row[2]:setColSpan(5):createDropDown(subordinateassignments, { startOption = function () menu.updateSubordinateGroupInfo(); return menu.subordinategroups[i] and menu.subordinategroups[i].assignment or "" end, uiTriggerID = "subordinate_group_role_" .. i, helpOverlayID = "docked_subordinate_role" .. subordinatecounter, helpOverlayText = " ", helpOverlayHighlightOnly = true })
-						row[2].handlers.onDropDownConfirmed = function(_, newassignment) Helper.dropdownAssignment(_, nil, i, menu.currentplayership, newassignment) end
+						row[2].handlers.onDropDownConfirmed = function(_, newassignment) Helper.dropdownAssignment(menu, nil, i, menu.currentplayership, newassignment, function () menu.refresh = getElapsedTime() - 1 end) end
 						
 						-- Runekn's Docking Options edits begin here --
 						-- This has been replaced
